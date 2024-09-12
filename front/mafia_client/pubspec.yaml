@@ -1,0 +1,24 @@
+name: mafia_client
+description: "A new Flutter project."
+
+publish_to: 'none' 
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  stomp_dart_client: ^2.1.0
+  web_socket_channel: ^3.0.1
+
+flutter:
+  uses-material-design: true
