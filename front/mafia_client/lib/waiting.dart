@@ -1,13 +1,14 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 
 class WaitingRoom extends StatelessWidget {
-  final int roomId;
+  final int gameId;
   final String username;
 
-  WaitingRoom({required this.roomId, required this.username});
+  WaitingRoom({required this.gameId, required this.username});
 
   @override
   Widget build(BuildContext context) {
@@ -16,16 +17,16 @@ class WaitingRoom extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: WaitingRoomPage(roomId: roomId, username: username),
+      home: WaitingRoomPage(gameId: gameId, username: username),
     );
   }
 }
 
 class WaitingRoomPage extends StatefulWidget {
-  final int roomId;
+  final int gameId;
   final String username;
 
-  WaitingRoomPage({required this.roomId, required this.username});
+  WaitingRoomPage({required this.gameId, required this.username});
 
   @override
   _WaitingRoomPageState createState() => _WaitingRoomPageState();
@@ -33,17 +34,21 @@ class WaitingRoomPage extends StatefulWidget {
 
 class _WaitingRoomPageState extends State<WaitingRoomPage> {
   late StompClient _stompClient;
-  final String _serverUrl = 'http://192.168.45.40:8080/chatting';
+  final String _serverUrl = 'http://localhost:8080/chatting';
+  final String _joinServerUrl = 'http://localhost:8080/game/join';
   final String _sendEndpoint = '/app/message';
   final String _subscribeEndpoint = '/topic/message';
+  final String _userListEndpoint = '/topic/users';
 
   final TextEditingController _messageController = TextEditingController();
   final List<Map<String, dynamic>> _messages = [];
+  final List<String> _users = [];
 
   @override
   void initState() {
     super.initState();
     _initializeWebSocket();
+    _gameJoin();
   }
 
   void _initializeWebSocket() {
@@ -59,12 +64,25 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
     _stompClient.activate();
   }
 
+  void _gameJoin() async {
+    final joinData = {
+      'gameId': widget.gameId,
+      'userName': widget.username,
+    };
+    final response = await Dio().post(_joinServerUrl, data: joinData);
+    if (response.statusCode == 200) {
+      print('Joined room ${widget.gameId}');
+    } else {
+      print('Failed to join room ${widget.gameId}');
+    }
+  }
+
   void _sendMessage() {
     if (_messageController.text.isNotEmpty) {
       final message = {
         'content': _messageController.text,
         'uuid': widget.username,
-        'roomId': widget.roomId
+        'gameId': widget.gameId
       };
       _stompClient.send(
         destination: _sendEndpoint,
@@ -76,12 +94,26 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
 
   void _onConnect(StompFrame frame) {
     _stompClient.subscribe(
-      destination: '$_subscribeEndpoint/${widget.roomId}',
+      destination: '$_subscribeEndpoint/${widget.gameId}',
       callback: (StompFrame frame) {
         if (frame.body != null) {
           final message = json.decode(frame.body!);
           setState(() {
             _messages.add(message);
+          });
+        }
+      },
+    );
+
+    _stompClient.subscribe(
+      destination: '$_userListEndpoint/${widget.gameId}',
+      callback: (StompFrame frame) {
+        if (frame.body != null) {
+          final userList = json.decode(frame.body!) as List<dynamic>;
+          print("User list: $userList");
+          setState(() {
+            _users.clear();
+            _users.addAll(userList.cast<String>());
           });
         }
       },
@@ -92,10 +124,11 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Chat Room ${widget.roomId}'),
+        title: Text('Chat Room ${widget.gameId}'),
       ),
       body: Column(
         children: [
+          _buildUserList(),
           Expanded(
             child: ListView.builder(
               itemCount: _messages.length,
@@ -108,6 +141,33 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
           ),
           _buildMessageInput(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildUserList() {
+    return Container(
+      height: 60,
+      padding: EdgeInsets.symmetric(vertical: 8),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _users.length,
+        itemBuilder: (context, index) {
+          return Container(
+            margin: EdgeInsets.symmetric(horizontal: 4),
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.blue[100],
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Center(
+              child: Text(
+                _users[index],
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -150,7 +210,8 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(25),
                 ),
-                contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               ),
             ),
           ),

@@ -8,10 +8,10 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 public class GameStatusDTO {
-    private String roomName;
-    private String roomPassword;
-    private String roomStatus;
-    private String roomOwner;
-    private String roomPlayerCount;
-    private String roomMaxPlayerCount;
+    private String gameName;
+    private String gamePassword;
+    private String gameStatus;
+    private String gameOwner;
+    private int gamePlayerCount;
+    private int gameMaxPlayerCount;
 }

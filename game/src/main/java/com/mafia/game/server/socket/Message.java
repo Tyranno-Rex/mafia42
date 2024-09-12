@@ -1,4 +1,4 @@
-package com.mafia.game.server.chatting;
+package com.mafia.game.server.socket;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -12,5 +12,5 @@ import lombok.Setter;
 public class Message {
     private String content;
     private String uuid;
-    private String roomId;
+    private String gameId;
 }
