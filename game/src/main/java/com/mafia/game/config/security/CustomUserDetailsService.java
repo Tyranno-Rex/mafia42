@@ -14,17 +14,14 @@ import org.springframework.stereotype.Service;
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final GamerRepository gamerRepository;
+
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-
         Gamer userData = gamerRepository.findByUserName(username);
-
         if (userData != null) {
-
             return new CustomUserDetails(userData);
         }
-
-
-        return null;
+        throw new UsernameNotFoundException("User not found with username: " + username);
     }
 }
+
