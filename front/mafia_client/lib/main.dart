@@ -21,8 +21,7 @@ class MyApp extends StatelessWidget {
             seedColor: const Color.fromARGB(255, 209, 7, 0)),
         useMaterial3: true,
       ),
-      home: const MyHomePage(
-          title: 'Mafia42: Jeong Eun Seong simple implementation'),
+      home: const MyHomePage(title: 'Mafia42'),
     );
   }
 }
@@ -39,8 +38,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-
- Future<void> _login() async {
+  Future<void> _login() async {
     final dio = Dio();
     try {
       final response = await dio.post(
@@ -62,10 +60,8 @@ class _MyHomePageState extends State<MyHomePage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-              builder: (context) =>
-                  GameLobby(username: _nameController.text)),
+              builder: (context) => GameLobby(username: _nameController.text)),
         );
-
       }
     } catch (e) {
       if (e is DioException) {
@@ -131,7 +127,7 @@ class _MyHomePageState extends State<MyHomePage> {
               },
               child: const Text('Login'),
             ),
-            
+
             Container(
               height: 10,
             ),

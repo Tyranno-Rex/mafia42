@@ -36,13 +36,17 @@ public class GameService {
         }
     }
 
+    public void deleteUser(Long roomId, String userName) {
+        Game game = gameRepository.findById(roomId).orElseThrow();
+        game.removePlayer(userName);
+        gameRepository.save(game);
+    }
+
     public void joinGame(GameJoinDTO gamejoinDTO) {
-        System.out.println("DTO: " + gamejoinDTO.getGameId() + " " + gamejoinDTO.getUserName());
         Game game = gameRepository.findById(gamejoinDTO.getGameId())
                 .orElseThrow(() -> new IllegalArgumentException("Game not found with id: " + gamejoinDTO.getGameId()));
         Gamer gamer = gamerService.findByUserName(gamejoinDTO.getUserName());
         game.addPlayer(gamer);
-        System.out.println("GET Player: " + game.getPlayers());
         gameRepository.save(game);
     }
 

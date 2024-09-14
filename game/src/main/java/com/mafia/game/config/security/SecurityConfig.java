@@ -54,7 +54,7 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable);
 
         http.authorizeHttpRequests((auth) -> auth
-                .requestMatchers("/login", "/", "/gamer/signup", "/reissue", "/chatting/**").permitAll()
+                .requestMatchers("/login", "/", "/gamer/signup", "/reissue", "/socket/**").permitAll()
                 .requestMatchers( "/game/**", "/gamer/**").hasAnyRole("USER")
                 .anyRequest().authenticated());
 

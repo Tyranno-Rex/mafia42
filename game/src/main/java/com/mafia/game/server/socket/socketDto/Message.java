@@ -1,4 +1,4 @@
-package com.mafia.game.server.socket;
+package com.mafia.game.server.socket.socketDto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

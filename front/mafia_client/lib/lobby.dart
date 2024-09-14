@@ -42,7 +42,8 @@ class _GameRoomsListState extends State<GameLobby> {
     if (accessToken == null) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const MyHomePage(title: 'Mafia42')),
+        MaterialPageRoute(
+            builder: (context) => const MyHomePage(title: 'Mafia42')),
       );
     }
     _fetchGames();
@@ -65,7 +66,7 @@ class _GameRoomsListState extends State<GameLobby> {
 
       if (response.statusCode == 200) {
         List<dynamic> gamesJson = response.data as List<dynamic>;
-
+        print(gamesJson);
         setState(() {
           _games = gamesJson
               .map((game) => Game.fromJson(game as Map<String, dynamic>))
@@ -90,9 +91,9 @@ class _GameRoomsListState extends State<GameLobby> {
         data: {
           'gameName': _nameController.text,
           'gamePassword': _gamePasswordController.text,
-          'gameStatus': 'WAITING',
+          'gameStatus': 'CREATED',
           'gameOwner': widget.username,
-          'gamePlayerCount': 1,
+          'gamePlayerCount': 0,
           'gameMaxPlayerCount': 8,
         },
         options: Options(

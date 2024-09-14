@@ -50,6 +50,14 @@ public class Game {
     }
 
     public void addPlayer(Gamer gamer) {
+        if (this.playerCount == 0) {
+            this.roomStatus = "WAITING";
+        }
+        this.playerCount++;
         players.add(gamer);
+    }
+
+    public void removePlayer(String userName) {
+        players.removeIf(gamer -> gamer.getUserName().equals(userName));
     }
 }

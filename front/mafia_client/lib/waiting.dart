@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:html';
 import 'dart:convert';
 
@@ -36,11 +37,16 @@ class WaitingRoomPage extends StatefulWidget {
 
 class _WaitingRoomPageState extends State<WaitingRoomPage> {
   late StompClient _stompClient;
-  final String _serverUrl = 'http://localhost:8080/chatting';
-  final String _joinServerUrl = 'http://localhost:8080/game/join';
+  final String _serverUrl = 'http://localhost:8080';
+  final String _serverSocketUrl = 'http://localhost:8080/socket';
+
   final String _sendEndpoint = '/app/message';
   final String _subscribeEndpoint = '/topic/message';
-  final String _userListEndpoint = '/topic/user';
+
+  final String _checkConnectionEndpoint = '/app/check';
+
+  final String _gameEndpoint = '/app/game';
+  final String _gameSubscribeEndpoint = '/topic/game';
 
   final TextEditingController _messageController = TextEditingController();
   final List<Map<String, dynamic>> _messages = [];
@@ -54,17 +60,19 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
     if (accessToken == null) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const MyHomePage(title: 'Mafia42')),
+        MaterialPageRoute(
+            builder: (context) => const MyHomePage(title: 'Mafia42')),
       );
     }
     _initializeWebSocket();
     _gameJoin();
+    _checkConnectionMessage();
   }
 
   void _initializeWebSocket() {
     _stompClient = StompClient(
       config: StompConfig.sockJS(
-        url: _serverUrl,
+        url: _serverSocketUrl,
         webSocketConnectHeaders: {
           'access': accessToken,
         },
@@ -77,13 +85,32 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
     _stompClient.activate();
   }
 
+  void _checkConnectionMessage() {
+    Timer.periodic(const Duration(seconds: 1), (timer) {
+      final message = {
+        'content': 'connected',
+        'username': widget.username,
+        'gameId': widget.gameId.toInt(),
+      };
+      if (_stompClient != null && _stompClient.connected) {
+        _stompClient.send(
+          destination: _checkConnectionEndpoint,
+          body: json.encode(message),
+          headers: {'access': accessToken ?? ''},
+        );
+      } else {
+        print('Stomp client is not connected');
+      }
+    });
+  }
+
   void _gameJoin() async {
     final joinData = {
       'gameId': widget.gameId,
       'userName': widget.username,
     };
     final response = await Dio().post(
-      _joinServerUrl,
+      '$_serverUrl/game/join',
       data: joinData,
       options: Options(
         headers: {
@@ -129,10 +156,15 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
     );
 
     _stompClient.subscribe(
-      destination: '$_userListEndpoint/${widget.gameId}',
+      destination: '$_gameSubscribeEndpoint/${widget.gameId}',
       callback: (StompFrame frame) {
         if (frame.body != null) {
-          final userList = json.decode(frame.body!) as List<dynamic>;
+          final game = json.decode(frame.body!);
+          print("Game: $game");
+          print("Players: ${game['players']}");
+
+          final userList =
+              game['players'].map((player) => player['userName']).toList();
           print("User list: $userList");
           setState(() {
             _users.clear();
