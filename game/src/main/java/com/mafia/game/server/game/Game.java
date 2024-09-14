@@ -31,7 +31,12 @@ public class Game {
     private int doctorCount;
     private int citizenCount;
 
-    @OneToMany
+    @ManyToMany
+//    @JoinTable(
+//            name = "game_players",
+//            joinColumns = @JoinColumn(name = "game_id"),
+//            inverseJoinColumns = @JoinColumn(name = "player_id")
+//    )
     private List<Gamer> players = new ArrayList<>();
 
     public Game() {
@@ -52,9 +57,17 @@ public class Game {
     public void addPlayer(Gamer gamer) {
         if (this.playerCount == 0) {
             this.roomStatus = "WAITING";
+            this.playerCount++;
+            this.players.add(gamer);
+        } else{
+            this.playerCount++;
+            this.players.add(gamer);
         }
-        this.playerCount++;
-        players.add(gamer);
+        System.out.println("Player added to the game: " + gamer.getUserName() + " " + players.size());
+    }
+
+    public void setGameStatus(String status) {
+        this.roomStatus = status;
     }
 
     public void removePlayer(String userName) {

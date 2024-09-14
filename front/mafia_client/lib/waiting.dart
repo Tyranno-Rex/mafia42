@@ -51,6 +51,7 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
   final TextEditingController _messageController = TextEditingController();
   final List<Map<String, dynamic>> _messages = [];
   final List<String> _users = [];
+  Timer? _timer;
 
   var accessToken = window.localStorage['access'];
 
@@ -86,13 +87,13 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
   }
 
   void _checkConnectionMessage() {
-    Timer.periodic(const Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       final message = {
         'content': 'connected',
         'username': widget.username,
         'gameId': widget.gameId.toInt(),
       };
-      if (_stompClient != null && _stompClient.connected) {
+      if (_stompClient.connected) {
         _stompClient.send(
           destination: _checkConnectionEndpoint,
           body: json.encode(message),
@@ -284,6 +285,11 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
 
   @override
   void dispose() {
+    // Cancel the timer if it's running
+    if (_timer != null && _timer!.isActive) {
+      _timer!.cancel();
+    }
+    // Deactivate WebSocket connection
     _stompClient.deactivate();
     _messageController.dispose();
     super.dispose();

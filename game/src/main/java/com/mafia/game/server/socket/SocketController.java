@@ -1,11 +1,9 @@
 package com.mafia.game.server.socket;
 
 import com.mafia.game.model.gamer.GamerController;
-import com.mafia.game.server.game.Game;
-import com.mafia.game.server.game.GameController;
-import com.mafia.game.server.game.GameService;
+import com.mafia.game.server.game.*;
 
-import com.mafia.game.server.game.GamerActivityEvent;
+import com.mafia.game.server.game.gameDto.GameSocketDTO;
 import com.mafia.game.server.socket.socketDto.CheckMessage;
 import com.mafia.game.server.socket.socketDto.Message;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +35,8 @@ public class SocketController {
     }
 
     @MessageMapping("/game")
-    public void GameSocket(Long roomId, Game game) throws Exception {
-        messagingTemplate.convertAndSend("/topic/game/" + roomId, game);
+    public void GameSocket(Long roomId, GameState game) throws Exception {
+        GameSocketDTO gameSocketDTO = game.toDTO();
+        messagingTemplate.convertAndSend("/topic/game/" + roomId, gameSocketDTO);
     }
 }

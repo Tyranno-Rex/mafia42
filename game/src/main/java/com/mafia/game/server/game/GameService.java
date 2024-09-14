@@ -16,6 +16,12 @@ public class GameService {
     private final GameRepository gameRepository;
     private final GamerService gamerService;
 
+
+    // GameState가 Shutdown인 게임을 제외한 모든 게임을 반환
+    public List<Game> getActiveGames() {
+        return gameRepository.findByGameStatusNot();
+    }
+
     public List<Game> getAllGames() {
         return gameRepository.findAll();
     }
@@ -27,6 +33,10 @@ public class GameService {
                 gameStatusDTO.getGamePlayerCount(), gameStatusDTO.getGameMaxPlayerCount());
         gameRepository.save(game);
         return game;
+    }
+
+    public void saveGame(Game game) {
+        gameRepository.save(game);
     }
 
     public void deleteGame(GameDeleteDTO gameDeleteDTO) {
@@ -46,6 +56,9 @@ public class GameService {
         Game game = gameRepository.findById(gamejoinDTO.getGameId())
                 .orElseThrow(() -> new IllegalArgumentException("Game not found with id: " + gamejoinDTO.getGameId()));
         Gamer gamer = gamerService.findByUserName(gamejoinDTO.getUserName());
+        if (game.getPlayers().contains(gamer)) {
+            throw new IllegalArgumentException("User already joined the game");
+        }
         game.addPlayer(gamer);
         gameRepository.save(game);
     }

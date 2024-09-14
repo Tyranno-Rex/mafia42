@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Getter
 @Setter
@@ -17,6 +20,6 @@ public class Gamer {
     private String userPassword;
     private String role;
 
-    @ManyToOne
-    private Game game;
+    @ManyToMany(mappedBy = "players")
+    private List<Game> games = new ArrayList<>();
 }
