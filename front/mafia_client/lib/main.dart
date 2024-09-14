@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:math';
+import 'dart:html';
 import 'package:flutter/material.dart';
 import 'package:mafia_client/lobby.dart';
 import 'package:dio/dio.dart';
@@ -36,32 +39,58 @@ class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  // login
-  void _login() async {
-    final loginData = {
-      'username': _nameController.text,
-      'password': _passwordController.text,
-    };
 
-    final response = await Dio().post('http://localhost:8080/login',
-        data: loginData,
+ Future<void> _login() async {
+    final dio = Dio();
+    try {
+      final response = await dio.post(
+        'http://localhost:8080/login',
+        data: {
+          'username': _nameController.text,
+          'password': _passwordController.text,
+        },
         options: Options(
-          headers: {'Content-Type': 'application/json'},
-        ));
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        window.localStorage['access'] = response.headers['access']![0];
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) =>
+                  GameLobby(username: _nameController.text)),
+        );
+
+      }
+    } catch (e) {
+      if (e is DioException) {
+        print('Dio Error: ${e.message}');
+        print('Error Response: ${e.response}');
+      } else {
+        print('Unexpected Error: $e');
+      }
+    }
   }
 
   // sign up
   void _signUp() async {
     final signUpData = {
-      'username': _nameController.text,
-      'password': _passwordController.text,
+      'userName': _nameController.text,
+      'userPassword': _passwordController.text,
     };
 
-    final response = await Dio().post('http://localhost:8080/signup',
+    final response = await Dio().post('http://localhost:8080/gamer/signup',
         data: signUpData,
         options: Options(
           headers: {'Content-Type': 'application/json'},
         ));
+
+    print(response);
   }
 
   @override
@@ -92,12 +121,19 @@ class _MyHomePageState extends State<MyHomePage> {
                 labelText: 'Password',
               ),
             ),
+            Container(
+              height: 10,
+            ),
             // Loign button
             ElevatedButton(
               onPressed: () {
                 _login();
               },
               child: const Text('Login'),
+            ),
+            
+            Container(
+              height: 10,
             ),
             // Sign up button
             ElevatedButton(

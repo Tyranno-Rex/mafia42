@@ -1,7 +1,9 @@
+import 'dart:html';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:mafia_client/main.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 
 class WaitingRoom extends StatelessWidget {
@@ -38,15 +40,23 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
   final String _joinServerUrl = 'http://localhost:8080/game/join';
   final String _sendEndpoint = '/app/message';
   final String _subscribeEndpoint = '/topic/message';
-  final String _userListEndpoint = '/topic/users';
+  final String _userListEndpoint = '/topic/user';
 
   final TextEditingController _messageController = TextEditingController();
   final List<Map<String, dynamic>> _messages = [];
   final List<String> _users = [];
 
+  var accessToken = window.localStorage['access'];
+
   @override
   void initState() {
     super.initState();
+    if (accessToken == null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const MyHomePage(title: 'Mafia42')),
+      );
+    }
     _initializeWebSocket();
     _gameJoin();
   }
@@ -55,6 +65,9 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
     _stompClient = StompClient(
       config: StompConfig.sockJS(
         url: _serverUrl,
+        webSocketConnectHeaders: {
+          'access': accessToken,
+        },
         onConnect: _onConnect,
         onWebSocketError: (dynamic error) => print('WebSocket Error: $error'),
         onStompError: (dynamic frame) => print('Stomp Error: $frame'),
@@ -69,7 +82,15 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
       'gameId': widget.gameId,
       'userName': widget.username,
     };
-    final response = await Dio().post(_joinServerUrl, data: joinData);
+    final response = await Dio().post(
+      _joinServerUrl,
+      data: joinData,
+      options: Options(
+        headers: {
+          'access': accessToken,
+        },
+      ),
+    );
     if (response.statusCode == 200) {
       print('Joined room ${widget.gameId}');
     } else {
@@ -87,6 +108,7 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
       _stompClient.send(
         destination: _sendEndpoint,
         body: json.encode(message),
+        headers: {'access': accessToken ?? ''},
       );
       _messageController.clear();
     }
@@ -103,6 +125,7 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
           });
         }
       },
+      headers: {'access': accessToken ?? ''},
     );
 
     _stompClient.subscribe(
@@ -117,6 +140,7 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
           });
         }
       },
+      headers: {'access': accessToken ?? ''},
     );
   }
 

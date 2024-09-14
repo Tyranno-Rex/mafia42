@@ -1,5 +1,6 @@
 package com.mafia.game.server.socket;
 
+import com.mafia.game.model.gamer.Gamer;
 import com.mafia.game.server.game.GameService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +24,7 @@ public class SocketController {
     }
 
     @MessageMapping("/user")
-    public void userJoinSocket(Long roomId, List<String> users) throws Exception {
+    public void userGameSocket(Long roomId, List<Gamer> users) throws Exception {
         messagingTemplate.convertAndSend("/topic/user/" + roomId, users);
     }
 }

@@ -1,9 +1,9 @@
-package com.mafia.game.config.security.JWT;
+package com.mafia.game.config.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mafia.game.config.security.JWT.JWTUtil;
 import com.mafia.game.config.security.JWT.refresh.RefreshEntity;
 import com.mafia.game.config.security.JWT.refresh.RefreshRepository;
-import io.jsonwebtoken.Jwts;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,9 +15,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.util.WebUtils;
-
-import com.mafia.game.config.security.CustomUserDetails;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -61,7 +58,6 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
         CustomUserDetails customUserDetails = (CustomUserDetails) authentication.getPrincipal();
 
         String username = customUserDetails.getUsername();
-
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
         Iterator<? extends GrantedAuthority> iterator = authorities.iterator();
 
@@ -73,6 +69,7 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
 
         addRefreshEntity(username, refresh, 86400000L);
 
+        response.setHeader("Access-Control-Expose-Headers", "*");
         response.setHeader("access", access);
         response.addCookie(createCookie("refresh", refresh));
         response.setStatus(HttpStatus.OK.value());
@@ -87,6 +84,10 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
         Cookie cookie = new Cookie(key, value);
         cookie.setMaxAge(24*60*60);
         cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        cookie.setAttribute("SameSite", "None"); // 크로스 사이트 요청 허용
+//        cookie.setSecure(true); // HTTPS를 사용하는 경우에만 설정
+        // cookie.setDomain("your-domain.com"); // 필요한 경우 도메인 설정
         return cookie;
     }
 

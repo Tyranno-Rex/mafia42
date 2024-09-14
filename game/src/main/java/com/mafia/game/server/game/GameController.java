@@ -4,6 +4,7 @@ import com.mafia.game.server.game.gameDto.GameDeleteDTO;
 import com.mafia.game.server.game.gameDto.GameJoinDTO;
 import com.mafia.game.server.socket.SocketController;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
 import com.mafia.game.server.game.gameDto.GameStatusDTO;
@@ -55,14 +56,17 @@ public class GameController {
         try {
             System.out.println("JOIN Game: " + gameJoinDTO.getGameId() + " " + gameJoinDTO.getUserName());
             gameService.joinGame(gameJoinDTO);
-            System.out.println("Check 1");
-//            socketController.userJoinSocket(gameJoinDTO.getGameId(), gameService.getUsers(gameJoinDTO.getGameId()));
-            System.out.println("Check 2");
+            socketController.userGameSocket(gameJoinDTO.getGameId(), gameService.getUsers(gameJoinDTO.getGameId()));
             response.put("status", "success");
             return response;
         } catch (Exception e) {
             response.put("status", "fail");
             return response;
         }
+    }
+
+    @Scheduled(fixedRate = 1000)
+    public void checkGameStatus() {
+//        gameService.checkGameStatus();
     }
 }

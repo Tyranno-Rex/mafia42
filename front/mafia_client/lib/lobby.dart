@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:mafia_client/main.dart';
 import 'package:mafia_client/waiting.dart';
+import 'dart:html';
 
 class Game {
   final int id;
@@ -32,10 +34,17 @@ class _GameRoomsListState extends State<GameLobby> {
   bool _isLoading = true;
   final _nameController = TextEditingController();
   final _gamePasswordController = TextEditingController();
+  var accessToken = window.localStorage['access'];
 
   @override
   void initState() {
     super.initState();
+    if (accessToken == null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const MyHomePage(title: 'Mafia42')),
+      );
+    }
     _fetchGames();
   }
 
@@ -45,7 +54,14 @@ class _GameRoomsListState extends State<GameLobby> {
     });
 
     try {
-      final response = await Dio().get('http://localhost:8080/game/all');
+      final response = await Dio().get(
+        'http://localhost:8080/game/all',
+        options: Options(
+          headers: {
+            'access': accessToken,
+          },
+        ),
+      );
 
       if (response.statusCode == 200) {
         List<dynamic> gamesJson = response.data as List<dynamic>;
@@ -79,6 +95,11 @@ class _GameRoomsListState extends State<GameLobby> {
           'gamePlayerCount': 1,
           'gameMaxPlayerCount': 8,
         },
+        options: Options(
+          headers: {
+            'access': accessToken,
+          },
+        ),
       );
       _nameController.clear();
       _gamePasswordController.clear();

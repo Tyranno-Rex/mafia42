@@ -1,5 +1,6 @@
-package com.mafia.game.config.security.JWT;
+package com.mafia.game.config.security;
 
+import com.mafia.game.config.security.JWT.JWTUtil;
 import com.mafia.game.config.security.JWT.refresh.RefreshRepository;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;

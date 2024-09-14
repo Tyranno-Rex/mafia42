@@ -1,5 +1,7 @@
 package com.mafia.game.server.game;
 
+import com.mafia.game.model.gamer.Gamer;
+import com.mafia.game.model.gamer.GamerService;
 import com.mafia.game.server.game.gameDto.GameJoinDTO;
 import com.mafia.game.server.game.gameDto.GameDeleteDTO;
 import com.mafia.game.server.game.gameDto.GameStatusDTO;
@@ -12,6 +14,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GameService {
     private final GameRepository gameRepository;
+    private final GamerService gamerService;
 
     public List<Game> getAllGames() {
         return gameRepository.findAll();
@@ -37,13 +40,14 @@ public class GameService {
         System.out.println("DTO: " + gamejoinDTO.getGameId() + " " + gamejoinDTO.getUserName());
         Game game = gameRepository.findById(gamejoinDTO.getGameId())
                 .orElseThrow(() -> new IllegalArgumentException("Game not found with id: " + gamejoinDTO.getGameId()));
-//        game.addPlayer(gamejoinDTO.getUserName());
+        Gamer gamer = gamerService.findByUserName(gamejoinDTO.getUserName());
+        game.addPlayer(gamer);
         System.out.println("GET Player: " + game.getPlayers());
         gameRepository.save(game);
     }
 
-//    public List<String> getUsers(Long roomId) {
-//        Game game = gameRepository.findById(roomId).orElseThrow();
-//        return game.getPlayers();
-//    }
+    public List<Gamer> getUsers(Long roomId) {
+        Game game = gameRepository.findById(roomId).orElseThrow();
+        return game.getPlayers();
+    }
 }
