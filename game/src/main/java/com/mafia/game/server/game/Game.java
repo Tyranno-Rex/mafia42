@@ -32,11 +32,6 @@ public class Game {
     private int citizenCount;
 
     @ManyToMany
-//    @JoinTable(
-//            name = "game_players",
-//            joinColumns = @JoinColumn(name = "game_id"),
-//            inverseJoinColumns = @JoinColumn(name = "player_id")
-//    )
     private List<Gamer> players = new ArrayList<>();
 
     public Game() {
@@ -63,7 +58,7 @@ public class Game {
             this.playerCount++;
             this.players.add(gamer);
         }
-        System.out.println("Player added to the game: " + gamer.getUserName() + " " + players.size());
+        System.out.println("Player added to the game: " + gamer.getUserName() + " size: " + players.size());
     }
 
     public void setGameStatus(String status) {

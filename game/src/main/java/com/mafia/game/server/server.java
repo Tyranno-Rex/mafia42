@@ -12,13 +12,4 @@ import java.util.concurrent.ConcurrentHashMap;
 public class server {
     private Map<Long, Game> games = new ConcurrentHashMap<>();
     private final GameService gameService;
-
-
-    // 0.5초당 한번씩 실행
-    @Scheduled(fixedRate = 500)
-    public void gameLoop() {
-        for (Game game : games.values()) {
-//            game.update();
-        }
-    }
 }

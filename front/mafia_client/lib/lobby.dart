@@ -36,10 +36,10 @@ class _GameRoomsListState extends State<GameLobby> {
   bool _isLoading = true;
   final _nameController = TextEditingController();
   final _gamePasswordController = TextEditingController();
-  var accessToken = window.localStorage['access'];
 
   @override
   void initState() {
+    var accessToken = window.localStorage['access'];
     super.initState();
     if (accessToken == null) {
       Navigator.push(
@@ -52,6 +52,7 @@ class _GameRoomsListState extends State<GameLobby> {
   }
 
   Future<void> _fetchGames() async {
+    var accessToken = window.localStorage['access'];
     setState(() {
       _isLoading = true;
     });
@@ -87,6 +88,8 @@ class _GameRoomsListState extends State<GameLobby> {
   }
 
   Future<void> _createGame() async {
+    var accessToken = window.localStorage['access'];
+    print('accessToken: $accessToken');
     try {
       final response = await Dio().post(
         'http://localhost:8080/game/create',

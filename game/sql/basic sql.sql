@@ -5,5 +5,5 @@ select * from game;
 delete from gamer where id < 100000;
 select * from gamer;
 
-drop database mafia
-create database mafia
+drop database mafia;
+create database mafia;

@@ -79,11 +79,15 @@ public class GameController {
     public Map<String, String> joinGame(@RequestBody GameJoinDTO gameJoinDTO) {
         Map<String, String> response = new HashMap<>();
         try {
-
             // 실제 DB에 게임 정보를 업데이트
             gameService.joinGame(gameJoinDTO);
+
             // gameMap에 게임 정보를 업데이트
-            GameState game = gameMap.get(gameJoinDTO.getGameId());
+            GameState game = new GameState();
+            if (gameMap.containsKey(gameJoinDTO.getGameId())) {
+                System.out.println("Game Join: " + gameJoinDTO.getUserName());
+                game = gameMap.get(gameJoinDTO.getGameId());
+            }
             Gamer newPlayer = gamerService.findByUserName(gameJoinDTO.getUserName());
 
             // 게임 안에 플레이어가 있는 지 확인
@@ -95,14 +99,14 @@ public class GameController {
                 System.out.println("Game Join: " + gameJoinDTO.getUserName());
                 List<Gamer> players = new ArrayList<>(game.getPlayers());
                 players.add(newPlayer);
+                game.setId(gameJoinDTO.getGameId());
                 game.setPlayers(players);
                 game.setGameStatus("WAITING");
                 gameMap.put(game.getId(), game);
             }
-
             // gamerMap에 게이머의 접속 시간을 기록
             gamerMap.put(newPlayer.getId(), LocalDateTime.now().toString());
-
+            System.out.println("GameMap Size: " + gameMap.size());
             response.put("status", "success");
             return response;
         } catch (Exception e) {
@@ -124,19 +128,7 @@ public class GameController {
                 gameService.saveGame(game);
             }
         }
-        // gamerMap에서 게임에 참여한 플레이어의 접속 시간을 확인하고 접속을 5초 이상 안된다면, gameMap에서 제거
-//        Iterator<Map.Entry<Long, String>> gamerMapIterator = gamerMap.entrySet().iterator();
-//        while (gamerMapIterator.hasNext()) {
-//            Map.Entry<Long, String> entry = gamerMapIterator.next();
-//            if (LocalDateTime.now().isAfter(LocalDateTime.parse(entry.getValue()).plusSeconds(5))) {
-//                gamerMapIterator.remove();
-//            }
-//            // GameMap의 ㅔlayer에서도 해당 플레이어를 제거
-//            for (GameState game : gameMap.values()) {
-//                game.getPlayers().removeIf(gamer -> gamer.getId().equals(entry.getKey()));
-//            }
-//
-//        }
+
         Iterator<Map.Entry<Long, String>> gamerMapIterator = gamerMap.entrySet().iterator();
         while (gamerMapIterator.hasNext()) {
             Map.Entry<Long, String> entry = gamerMapIterator.next();
@@ -161,6 +153,9 @@ public class GameController {
                 if (players.isEmpty()) {
                     gameMap.remove(game.getId());
                 } else {
+
+
+
                     socketController.GameSocket(game.getId(), game);
                 }
             }

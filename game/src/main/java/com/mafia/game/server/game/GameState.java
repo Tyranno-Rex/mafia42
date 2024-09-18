@@ -26,6 +26,7 @@ public class GameState {
     private int gamePlayerCount;
     private int gameMaxPlayerCount;
     private String Datetime;
+    private String phase;
 
     private int playerCount;
     private int mafiaCount;

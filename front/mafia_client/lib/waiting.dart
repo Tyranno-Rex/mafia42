@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:mafia_client/main.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 class WaitingRoom extends StatelessWidget {
   final int gameId;
@@ -52,11 +53,9 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
   final List<Map<String, dynamic>> _messages = [];
   final List<String> _users = [];
   Timer? _timer;
-
-  var accessToken = window.localStorage['access'];
-
   @override
   void initState() {
+    var accessToken = window.localStorage['access'];
     super.initState();
     if (accessToken == null) {
       Navigator.push(
@@ -74,9 +73,6 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
     _stompClient = StompClient(
       config: StompConfig.sockJS(
         url: _serverSocketUrl,
-        webSocketConnectHeaders: {
-          'access': accessToken,
-        },
         onConnect: _onConnect,
         onWebSocketError: (dynamic error) => print('WebSocket Error: $error'),
         onStompError: (dynamic frame) => print('Stomp Error: $frame'),
@@ -97,7 +93,6 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
         _stompClient.send(
           destination: _checkConnectionEndpoint,
           body: json.encode(message),
-          headers: {'access': accessToken ?? ''},
         );
       } else {
         print('Stomp client is not connected');
@@ -106,6 +101,8 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
   }
 
   void _gameJoin() async {
+    var accessToken = window.localStorage['access'];
+    print("accessToken: $accessToken");
     final joinData = {
       'gameId': widget.gameId,
       'userName': widget.username,
@@ -136,7 +133,6 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
       _stompClient.send(
         destination: _sendEndpoint,
         body: json.encode(message),
-        headers: {'access': accessToken ?? ''},
       );
       _messageController.clear();
     }
@@ -153,7 +149,6 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
           });
         }
       },
-      headers: {'access': accessToken ?? ''},
     );
 
     _stompClient.subscribe(
@@ -161,20 +156,21 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
       callback: (StompFrame frame) {
         if (frame.body != null) {
           final game = json.decode(frame.body!);
-          print("Game: $game");
-          print("Players: ${game['players']}");
-
           final userList =
               game['players'].map((player) => player['userName']).toList();
-          print("User list: $userList");
           setState(() {
             _users.clear();
             _users.addAll(userList.cast<String>());
           });
         }
       },
-      headers: {'access': accessToken ?? ''},
-    );
+    );}
+
+  @override
+  void dispose() {
+    _stompClient.deactivate();
+    _timer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -281,17 +277,5 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
         ],
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    // Cancel the timer if it's running
-    if (_timer != null && _timer!.isActive) {
-      _timer!.cancel();
-    }
-    // Deactivate WebSocket connection
-    _stompClient.deactivate();
-    _messageController.dispose();
-    super.dispose();
   }
 }

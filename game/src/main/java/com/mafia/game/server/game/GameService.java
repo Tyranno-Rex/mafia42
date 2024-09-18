@@ -53,12 +53,12 @@ public class GameService {
     }
 
     public void joinGame(GameJoinDTO gamejoinDTO) {
-        Game game = gameRepository.findById(gamejoinDTO.getGameId())
-                .orElseThrow(() -> new IllegalArgumentException("Game not found with id: " + gamejoinDTO.getGameId()));
+        Game game = gameRepository.findById(gamejoinDTO.getGameId()).orElseThrow();
         Gamer gamer = gamerService.findByUserName(gamejoinDTO.getUserName());
         if (game.getPlayers().contains(gamer)) {
             throw new IllegalArgumentException("User already joined the game");
         }
+        System.out.println("User joined the game: " + gamer.getUserName());
         game.addPlayer(gamer);
         gameRepository.save(game);
     }

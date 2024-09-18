@@ -1,14 +1,12 @@
 package com.mafia.game.server.socket;
 
-import com.mafia.game.model.gamer.GamerController;
 import com.mafia.game.server.game.*;
-
 import com.mafia.game.server.game.gameDto.GameSocketDTO;
 import com.mafia.game.server.socket.socketDto.CheckMessage;
 import com.mafia.game.server.socket.socketDto.Message;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
@@ -40,3 +38,30 @@ public class SocketController {
         messagingTemplate.convertAndSend("/topic/game/" + roomId, gameSocketDTO);
     }
 }
+
+//@Controller
+//@RequiredArgsConstructor
+//public class SocketController {
+//
+//    @Autowired
+//    private RedisTemplate<String, Object> redisTemplate;
+//
+//    private final ApplicationEventPublisher eventPublisher;
+//
+//    @MessageMapping("/message")
+//    public void messageSocket(Message message) {
+//        redisTemplate.convertAndSend("topic/message/" + message.getGameId(), message);
+//    }
+//
+//    @MessageMapping("/check")
+//    public void checkSocket(CheckMessage checkMessage) {
+//        eventPublisher.publishEvent(new GamerActivityEvent(checkMessage.getUsername()));
+//    }
+//
+//    @MessageMapping("/game")
+//    public void GameSocket(Long roomId, GameState game) {
+//        GameSocketDTO gameSocketDTO = game.toDTO();
+//        redisTemplate.convertAndSend("topic/game/" + roomId, gameSocketDTO);
+//    }
+//}
+//
