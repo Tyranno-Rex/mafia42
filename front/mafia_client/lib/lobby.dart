@@ -16,8 +16,8 @@ class Game {
   factory Game.fromJson(Map<String, dynamic> json) {
     return Game(
       id: json['id'] as int,
-      name: json['roomName'].toString(),
-      playerCount: json['roomPlayerCount'] as int,
+      name: json['gameName'].toString(),
+      playerCount: json['gamePlayerCount'] as int,
     );
   }
 }
@@ -41,6 +41,7 @@ class _GameRoomsListState extends State<GameLobby> {
   void initState() {
     var accessToken = window.localStorage['access'];
     super.initState();
+    _fetchGames();
     if (accessToken == null) {
       Navigator.push(
         context,
@@ -48,7 +49,6 @@ class _GameRoomsListState extends State<GameLobby> {
             builder: (context) => const MyHomePage(title: 'Mafia42')),
       );
     }
-    _fetchGames();
   }
 
   Future<void> _fetchGames() async {
@@ -61,22 +61,25 @@ class _GameRoomsListState extends State<GameLobby> {
       final response = await Dio().get(
         'http://localhost:8080/game/all',
         options: Options(
+          contentType: Headers.jsonContentType,
           headers: {
             'access': accessToken,
-            'accept': 'application/json',
+            'Content-Type': 'application/json',
           },
         ),
       );
       print('Response data: ${response.data}');
       if (response.statusCode == 200) {
-        List<dynamic> gamesJson = response.data as List<dynamic>;
+        Map<String, dynamic> gamesJson = response.data as Map<String, dynamic>;
         print(gamesJson);
+
         setState(() {
-          _games = gamesJson
-              .map((game) => Game.fromJson(game as Map<String, dynamic>))
+          _games = gamesJson.entries
+              .map((game) => Game.fromJson(game.value as Map<String, dynamic>))
               .toList();
           _isLoading = false;
         });
+
       } else {
         throw Exception('Failed to load games');
       }
@@ -103,9 +106,9 @@ class _GameRoomsListState extends State<GameLobby> {
           'gameMaxPlayerCount': 8,
         },
         options: Options(
+          contentType: 'application/json',
           headers: {
             'access': accessToken,
-            'accept': 'application/json',
           },
         ),
       );

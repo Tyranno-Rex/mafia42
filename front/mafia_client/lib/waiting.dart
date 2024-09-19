@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:mafia_client/main.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 
 class WaitingRoom extends StatelessWidget {
   final int gameId;
@@ -72,7 +71,6 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
     }
     _initializeWebSocket();
     _gameJoin();
-    _checkConnectionMessage();
   }
 
   void _initializeWebSocket() {
@@ -117,14 +115,15 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
       '$_serverUrl/game/join',
       data: joinData,
       options: Options(
+        contentType: 'application/json',
         headers: {
           'access': accessToken,
-          'accept': 'application/json',
         },
       ),
     );
     if (response.statusCode == 200) {
       print('Joined room ${widget.gameId}');
+      _checkConnectionMessage();
     } else {
       print('Failed to join room ${widget.gameId}');
     }
@@ -142,9 +141,9 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
       '$_serverUrl/game/ready',
       data: readyData,
       options: Options(
+        contentType: 'application/json',
         headers: {
           'access': accessToken,
-          'accept': 'application/json',
         },
       ),
     );

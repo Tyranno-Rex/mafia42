@@ -34,10 +34,23 @@ public class GameController {
         updateGamerActivity(event.getUsername());
     }
 
+//    @GetMapping("/all")
+//    public Iterable<Game> getAllGames() {
+//        return gameService.getActiveGames();
+//    }
     @GetMapping("/all")
-    public Iterable<Game> getAllGames() {
-        return gameService.getActiveGames();
+    public Map<Long, GameState> getAllGames() {
+        List<Game> games = gameService.getActiveGames();
+        Map<Long, GameState> reponse_gameMap = new HashMap<>();
+        for (Game game : games) {
+            reponse_gameMap.put(game.getId(), new GameState(game.getId(),
+                    game.getRoomName(), game.getRoomPassword(),
+                    game.getRoomStatus(), game.getRoomOwner(),
+                    game.getRoomPlayerCount(), game.getRoomMaxPlayerCount()));
+        }
+        return reponse_gameMap;
     }
+
 
     @PostMapping("/create")
     @Transactional
@@ -108,11 +121,12 @@ public class GameController {
                 gameMap.put(game.getId(), game);
             }
 
-            GamePlayer newGamePlayer = new GamePlayer(newPlayer.getUserName(), "CITIZEN", true, false);
 
+            GamePlayer newGamePlayer = new GamePlayer(newPlayer.getUserName(), "CITIZEN", true, false);
             newGamePlayer.setDateTime(LocalDateTime.now().toString());
             // gamerMap에 게이머의 접속 시간을 기록
             gamerMap.put(newPlayer.getId(), newGamePlayer);
+            System.out.println("Gamer is added to the game: " + newPlayer.getUserName());
             response.put("status", "success");
             return response;
         } catch (Exception e) {
@@ -143,9 +157,6 @@ public class GameController {
             return response;
         }
     }
-
-
-
 
     @Scheduled(fixedRate = 1000)
     @Transactional
@@ -182,6 +193,16 @@ public class GameController {
                 List<Gamer> players = game.getPlayers();
                 if (players.isEmpty())
                     gameMap.remove(game.getId());
+                else if (players.size() == game.getGameMaxPlayerCount()) {
+                    Boolean isAllReady = true;
+                    for (Gamer player : players) {
+                        if (!player.getIsReady()) {
+                            isAllReady = false;
+                            break;
+                        }
+                    }
+
+                }
                 else
                     socketController.GameSocket(game.getId(), game);
             }

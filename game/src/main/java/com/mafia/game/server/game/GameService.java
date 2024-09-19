@@ -58,7 +58,7 @@ public class GameService {
         Game game = gameRepository.findById(gamejoinDTO.getGameId()).orElseThrow();
         Gamer gamer = gamerService.findByUserName(gamejoinDTO.getUserName());
         if (game.getPlayers().contains(gamer)) {
-            throw new IllegalArgumentException("User already joined the game");
+            return;
         }
         System.out.println("User joined the game: " + gamer.getUserName());
         game.addPlayer(gamer);
