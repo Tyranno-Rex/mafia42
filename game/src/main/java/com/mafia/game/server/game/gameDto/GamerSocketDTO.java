@@ -8,4 +8,5 @@ import lombok.Setter;
 public class GamerSocketDTO {
     private Long id;
     private String userName;
+    private Boolean isReady;
 }

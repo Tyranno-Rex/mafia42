@@ -19,6 +19,8 @@ public class Gamer {
     private String userName;
     private String userPassword;
     private String role;
+    private String status;
+    private Boolean isReady;
 
     @ManyToMany(mappedBy = "players")
     private List<Game> games = new ArrayList<>();

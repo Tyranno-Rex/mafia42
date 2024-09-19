@@ -1,15 +1,10 @@
-package com.mafia.game.server.game;
+package com.mafia.game.server.game.gameStatus;
 
 import com.mafia.game.model.gamer.Gamer;
 import com.mafia.game.server.game.gameDto.GameSocketDTO;
 import com.mafia.game.server.game.gameDto.GamerSocketDTO;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.Fetch;
-import org.springframework.data.repository.cdi.Eager;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -26,7 +21,11 @@ public class GameState {
     private int gamePlayerCount;
     private int gameMaxPlayerCount;
     private String Datetime;
-    private String phase;
+
+
+    private int phaseTime;
+    private String phaseStep;
+    private List<GamePlayer> gamePlayers = new ArrayList<>();
 
     private int playerCount;
     private int mafiaCount;
@@ -73,6 +72,7 @@ public class GameState {
             GamerSocketDTO gamerDTO = new GamerSocketDTO();
             gamerDTO.setId(gamer.getId());
             gamerDTO.setUserName(gamer.getUserName());
+            gamerDTO.setIsReady(gamer.getIsReady());
             dto.getPlayers().add(gamerDTO);
         }
         return dto;

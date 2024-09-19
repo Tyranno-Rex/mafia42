@@ -49,10 +49,16 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
   final String _gameEndpoint = '/app/game';
   final String _gameSubscribeEndpoint = '/topic/game';
 
+
   final TextEditingController _messageController = TextEditingController();
   final List<Map<String, dynamic>> _messages = [];
   final List<String> _users = [];
+  final List<String> _readyUsers = [];
+  
   Timer? _timer;
+  var _isReady = false;
+
+
   @override
   void initState() {
     var accessToken = window.localStorage['access'];
@@ -113,6 +119,7 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
       options: Options(
         headers: {
           'access': accessToken,
+          'accept': 'application/json',
         },
       ),
     );
@@ -120,6 +127,39 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
       print('Joined room ${widget.gameId}');
     } else {
       print('Failed to join room ${widget.gameId}');
+    }
+  }
+
+  void _gameReady() async {
+    var accessToken = window.localStorage['access'];
+    print("accessToken: $accessToken");
+    final readyData = {
+      'gameId': widget.gameId,
+      'username': widget.username,
+      'readyStatus': !_isReady,
+    };
+    final response = await Dio().post(
+      '$_serverUrl/game/ready',
+      data: readyData,
+      options: Options(
+        headers: {
+          'access': accessToken,
+          'accept': 'application/json',
+        },
+      ),
+    );
+    // response.put("status", "success");
+    if (response.statusCode == 200) {
+      print('Ready room ${widget.gameId}');
+      if (_isReady == false) {
+        _readyUsers.add(widget.username);
+        _isReady = true;
+      } else {
+        _readyUsers.remove(widget.username);
+        _isReady = false;
+      }
+    } else {
+      print('Failed to ready room ${widget.gameId}');
     }
   }
 
@@ -156,11 +196,22 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
       callback: (StompFrame frame) {
         if (frame.body != null) {
           final game = json.decode(frame.body!);
-          final userList =
-              game['players'].map((player) => player['userName']).toList();
+          var userList = game['players'].map((player) => player['userName']).toList();
+          var playerReady = game['players'].map((player) => player['userName']).toList();
+          for (var i = 0; i < game['players'].length; i++) {
+            if (game['players'][i]['isReady'] == null) {
+              playerReady.remove(game['players'][i]['userName']);
+            } 
+            else if (game['players'][i]['isReady'] == false ) {
+              playerReady.remove(game['players'][i]['userName']);
+            }
+          }
+         
           setState(() {
             _users.clear();
             _users.addAll(userList.cast<String>());
+            _readyUsers.clear();
+            _readyUsers.addAll(playerReady.cast<String>());
           });
         }
       },
@@ -181,6 +232,17 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
       ),
       body: Column(
         children: [
+          ButtonBar(
+            alignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  _gameReady();
+                },
+                child: Text('준비'),
+              ),
+            ],
+          ),
           _buildUserList(),
           Expanded(
             child: ListView.builder(
@@ -210,7 +272,8 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
             margin: EdgeInsets.symmetric(horizontal: 4),
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.blue[100],
+              // color: Colors.blue[100],
+              color: _readyUsers.contains(_users[index]) ? Colors.red : Colors.blue[100],
               borderRadius: BorderRadius.circular(20),
             ),
             child: Center(

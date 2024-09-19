@@ -63,10 +63,11 @@ class _GameRoomsListState extends State<GameLobby> {
         options: Options(
           headers: {
             'access': accessToken,
+            'accept': 'application/json',
           },
         ),
       );
-
+      print('Response data: ${response.data}');
       if (response.statusCode == 200) {
         List<dynamic> gamesJson = response.data as List<dynamic>;
         print(gamesJson);
@@ -104,9 +105,11 @@ class _GameRoomsListState extends State<GameLobby> {
         options: Options(
           headers: {
             'access': accessToken,
+            'accept': 'application/json',
           },
         ),
       );
+      print('Response data: ${response.data}');
       _nameController.clear();
       _gamePasswordController.clear();
       if (response.statusCode == 200) {

@@ -4,6 +4,9 @@ import com.mafia.game.model.gamer.Gamer;
 import com.mafia.game.model.gamer.GamerService;
 import com.mafia.game.server.game.gameDto.GameDeleteDTO;
 import com.mafia.game.server.game.gameDto.GameJoinDTO;
+import com.mafia.game.server.game.gameDto.GameReadyDTO;
+import com.mafia.game.server.game.gameStatus.GamePlayer;
+import com.mafia.game.server.game.gameStatus.GameState;
 import com.mafia.game.server.socket.SocketController;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +27,7 @@ public class GameController {
     private final SocketController socketController;
     private final GamerService gamerService;
     Map<Long, GameState> gameMap = new HashMap<>(); // 게임 전체의 정보를 기록
-    Map<Long, String> gamerMap = new HashMap<>(); // 게이머의 접속 시간을 기록
+    Map<Long, GamePlayer> gamerMap = new HashMap<>(); // 게이머의 접속 시간을 기록
 
     @EventListener
     public void handleGamerActivityEvent(GamerActivityEvent event) {
@@ -104,9 +107,12 @@ public class GameController {
                 game.setGameStatus("WAITING");
                 gameMap.put(game.getId(), game);
             }
+
+            GamePlayer newGamePlayer = new GamePlayer(newPlayer.getUserName(), "CITIZEN", true, false);
+
+            newGamePlayer.setDateTime(LocalDateTime.now().toString());
             // gamerMap에 게이머의 접속 시간을 기록
-            gamerMap.put(newPlayer.getId(), LocalDateTime.now().toString());
-            System.out.println("GameMap Size: " + gameMap.size());
+            gamerMap.put(newPlayer.getId(), newGamePlayer);
             response.put("status", "success");
             return response;
         } catch (Exception e) {
@@ -115,12 +121,39 @@ public class GameController {
         }
     }
 
+    @PostMapping("/ready")
+    @Transactional
+    public Map<String, String> readyGame(@RequestBody GameReadyDTO gameReadyDTO){
+        Map<String, String> response = new HashMap<>();
+        try {
+            System.out.println("Game Ready      : " + gameReadyDTO.getUsername());
+            GameState game = gameMap.get(gameReadyDTO.getGameId());
+            List<Gamer> players = game.getPlayers();
+            for (Gamer player : players) {
+                if (player.getUserName().equals(gameReadyDTO.getUsername())) {
+                    player.setIsReady(gameReadyDTO.getReadyStatus());
+                }
+            }
+            game.setPlayers(players);
+            gameMap.put(game.getId(), game);
+            response.put("status", "success");
+            return response;
+        } catch (Exception e) {
+            response.put("status", "fail");
+            return response;
+        }
+    }
+
+
+
+
     @Scheduled(fixedRate = 1000)
     @Transactional
     public void MainGameLoop() throws Exception {
-        System.out.println("GameMap Size: " + gameMap.size());
-        System.out.println("GamerMap Size: " + gamerMap.size());
 
+        System.out.println("\nGameMap Size: " + gameMap.size());
+        System.out.println("GamerMap Size: " + gamerMap.size());
+        System.out.println("==================================\n");
 
         for (Game game : gameService.getAllGames()){
             if (!gameMap.containsKey(game.getId())) {
@@ -129,10 +162,10 @@ public class GameController {
             }
         }
 
-        Iterator<Map.Entry<Long, String>> gamerMapIterator = gamerMap.entrySet().iterator();
+        Iterator<Map.Entry<Long, GamePlayer>> gamerMapIterator = gamerMap.entrySet().iterator();
         while (gamerMapIterator.hasNext()) {
-            Map.Entry<Long, String> entry = gamerMapIterator.next();
-            if (LocalDateTime.now().isAfter(LocalDateTime.parse(entry.getValue()).plusSeconds(5))) {
+            Map.Entry<Long, GamePlayer> entry = gamerMapIterator.next();
+            if (LocalDateTime.now().isAfter(LocalDateTime.parse(entry.getValue().getDateTime()).plusSeconds(10))) {
                 gamerMapIterator.remove();
                 // GameMap의 player에서도 해당 플레이어를 제거
                 for (GameState game : gameMap.values()) {
@@ -145,26 +178,39 @@ public class GameController {
 
         for (GameState game : gameMap.values()) {
             System.out.println("Game ID: " + game.getId() + " Game Status: " + game.getGameStatus() + " Player Count: " + game.getPlayers().size());
-            if (game.getGameStatus().equals("CREATED")) {
-                continue;
-            }
-            if (game.getGameStatus().equals("WAITING") || game.getGameStatus().equals("PLAYING")) {
+            if (game.getGameStatus().equals("WAITING")) {
                 List<Gamer> players = game.getPlayers();
-                if (players.isEmpty()) {
+                if (players.isEmpty())
                     gameMap.remove(game.getId());
-                } else {
-
-
-
+                else
                     socketController.GameSocket(game.getId(), game);
+            }
+            else if (game.getGameStatus().equals("STARTING")) {
+                game.setGameStatus("PLAYING");
+                game = gameService.SetGameState(game);
+
+                List<GamePlayer> gamePlayers = game.getGamePlayers();
+                for (int i = 0; i < 8; i++){
+                    System.out.println("Role: " + gamePlayers.get(i).getRole());
                 }
+                gameMap.put(game.getId(), game);
+            }
+            else if (game.getGameStatus().equals("PLAYING")) {
+                game = gameService.updateGameState(game);
+                gameMap.put(game.getId(), game);
+                socketController.GameSocket(game.getId(), game);
+            }
+            else if (game.getGameStatus().equals("SHUTDOWN")) {
+                gameMap.remove(game.getId());
             }
         }
     }
 
     public void updateGamerActivity(String username) {
         // 기본 접속 시간을 현재 시간으로 갱신
-        gamerMap.put(gamerService.findByUserName(username).getId(), LocalDateTime.now().toString());
+        GamePlayer gamePlayer = gamerMap.get(gamerService.findByUserName(username).getId());
+        gamePlayer.setDateTime(LocalDateTime.now().toString());
+        gamerMap.put(gamerService.findByUserName(username).getId(), gamePlayer);
     }
 }
 

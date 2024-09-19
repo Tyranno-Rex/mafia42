@@ -2,11 +2,11 @@ package com.mafia.game.server.socket;
 
 import com.mafia.game.server.game.*;
 import com.mafia.game.server.game.gameDto.GameSocketDTO;
+import com.mafia.game.server.game.gameStatus.GameState;
 import com.mafia.game.server.socket.socketDto.CheckMessage;
 import com.mafia.game.server.socket.socketDto.Message;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
