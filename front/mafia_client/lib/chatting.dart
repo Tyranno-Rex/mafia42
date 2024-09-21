@@ -4,14 +4,15 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:mafia_client/lobby.dart';
 import 'package:mafia_client/main.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 
-class gameRoom extends StatelessWidget {
+class WaitingRoom extends StatelessWidget {
   final int gameId;
   final String username;
 
-  gameRoom({required this.gameId, required this.username});
+  WaitingRoom({required this.gameId, required this.username});
 
   @override
   Widget build(BuildContext context) {
@@ -20,22 +21,22 @@ class gameRoom extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: gameRoomPage(gameId: gameId, username: username),
+      home: WaitingRoomPage(gameId: gameId, username: username),
     );
   }
 }
 
-class gameRoomPage extends StatefulWidget {
+class WaitingRoomPage extends StatefulWidget {
   final int gameId;
   final String username;
 
-  gameRoomPage({required this.gameId, required this.username});
+  WaitingRoomPage({required this.gameId, required this.username});
 
   @override
-  _gameRoomPageState createState() => _gameRoomPageState();
+  _WaitingRoomPageState createState() => _WaitingRoomPageState();
 }
 
-class _gameRoomPageState extends State<gameRoomPage> {
+class _WaitingRoomPageState extends State<WaitingRoomPage> {
   late StompClient _stompClient;
   final String _serverUrl = 'http://localhost:8080';
   final String _serverSocketUrl = 'http://localhost:8080/socket';
@@ -48,19 +49,28 @@ class _gameRoomPageState extends State<gameRoomPage> {
   final String _gameEndpoint = '/app/game';
   final String _gameSubscribeEndpoint = '/topic/game';
 
-  late String _gamerUserGameEndpoint;
-  late String _gameUserGameSubscribeEndpoint;
+  late final String _userEndpoint = '/app/user';
+  late final String _userSubscribeEndpoint = '/topic/user';
 
   final TextEditingController _messageController = TextEditingController();
   final List<Map<String, dynamic>> _messages = [];
   final List<String> _users = [];
-  
-  Timer? _timer;
+  final List<String> _readyUsers = [];
 
+  var _phaseStep = '';
+  var _phaseTime = 0;
+  var _phaseTimeMax = 0;
+
+  Timer? _timer;
+  var _isReady = false;
+  String _gameRoomStatus = 'WAITING';
+  var _MyRole = '';
+  var _isAlive = true;
 
   @override
   void initState() {
     var accessToken = window.localStorage['access'];
+
     super.initState();
     if (accessToken == null) {
       Navigator.push(
@@ -69,9 +79,8 @@ class _gameRoomPageState extends State<gameRoomPage> {
             builder: (context) => const MyHomePage(title: 'Mafia42')),
       );
     }
-    _gamerUserGameEndpoint = '/app/user${widget.gameId}/${widget.username}';
-    _gameUserGameSubscribeEndpoint = '/topic/user${widget.gameId}/${widget.username}';
     _initializeWebSocket();
+    _gameJoin();
   }
 
   void _initializeWebSocket() {
@@ -105,6 +114,84 @@ class _gameRoomPageState extends State<gameRoomPage> {
     });
   }
 
+  void _gameJoin() async {
+    var accessToken = window.localStorage['access'];
+    final joinData = {
+      'gameId': widget.gameId,
+      'userName': widget.username,
+    };
+    final response = await Dio().post(
+      '$_serverUrl/game/join',
+      data: joinData,
+      options: Options(
+        contentType: 'application/json',
+        headers: {
+          'access': accessToken,
+        },
+      ),
+    );
+    if (response.statusCode == 200) {
+      print('Joined room ${widget.gameId}');
+      _checkConnectionMessage();
+    } else {
+      print('Failed to join room ${widget.gameId}');
+    }
+  }
+
+  void _gameLeave() async {
+    var accessToken = window.localStorage['access'];
+    final leaveData = {
+      'gameId': widget.gameId,
+      'userName': widget.username,
+    };
+    final response = await Dio().post(
+      '$_serverUrl/game/leave',
+      data: leaveData,
+      options: Options(
+        contentType: 'application/json',
+        headers: {
+          'access': accessToken,
+        },
+      ),
+    );
+    if (response.statusCode == 200) {
+      print('Left room ${widget.gameId}');
+    } else {
+      print('Failed to leave room ${widget.gameId}');
+    }
+  }
+
+  void _gameReady() async {
+    var accessToken = window.localStorage['access'];
+    final readyData = {
+      'gameId': widget.gameId,
+      'username': widget.username,
+      'readyStatus': !_isReady,
+    };
+    final response = await Dio().post(
+      '$_serverUrl/game/ready',
+      data: readyData,
+      options: Options(
+        contentType: 'application/json',
+        headers: {
+          'access': accessToken,
+        },
+      ),
+    );
+    // response.put("status", "success");
+    if (response.statusCode == 200) {
+      print('Ready room ${widget.gameId}');
+      if (_isReady == false) {
+        _readyUsers.add(widget.username);
+        _isReady = true;
+      } else {
+        _readyUsers.remove(widget.username);
+        _isReady = false;
+      }
+    } else {
+      print('Failed to ready room ${widget.gameId}');
+    }
+  }
 
   void _sendMessage() {
     if (_messageController.text.isNotEmpty) {
@@ -139,15 +226,81 @@ class _gameRoomPageState extends State<gameRoomPage> {
       callback: (StompFrame frame) {
         if (frame.body != null) {
           final game = json.decode(frame.body!);
-          var userList = game['players'].map((player) => player['userName']).toList();
-          
+          var userList =
+              game['players'].map((player) => player['userName']).toList();
+          var playerReady =
+              game['players'].map((player) => player['userName']).toList();
+          for (var i = 0; i < game['players'].length; i++) {
+            if (game['players'][i]['isReady'] == null) {
+              playerReady.remove(game['players'][i]['userName']);
+            } else if (game['players'][i]['isReady'] == false) {
+              playerReady.remove(game['players'][i]['userName']);
+            }
+          }
+
+          if (game['phaseStep'] == null) {
+            game['phaseStep'] = '';
+          } else {
+            _phaseStep = game['phaseStep'];
+          }
+          if (game['phaseTime'] == null) {
+            game['phaseTime'] = 0;
+          } else {
+            _phaseTime = game['phaseTime'];
+          }
+          if (game['phaseTimeMax'] == null) {
+            game['phaseTimeMax'] = 0;
+          } else {
+            _phaseTimeMax = game['phaseTimeMax'];
+          }
           setState(() {
             _users.clear();
             _users.addAll(userList.cast<String>());
+            _readyUsers.clear();
+            _readyUsers.addAll(playerReady.cast<String>());
           });
         }
       },
-    );}
+    );
+
+    // 소켓 연결 설정 부분
+    _stompClient.subscribe(
+      destination:
+          '$_userSubscribeEndpoint/${widget.gameId}/${widget.username}',
+      callback: (StompFrame frame) {
+        if (frame.body != null) {
+          final message = json.decode(frame.body!);
+          setState(() {
+            _MyRole = message['role'];
+            _isAlive = message['alive'];
+          });
+
+          // 새로운 역할 정보가 도착했을 때 모달 알림 표시
+          _showRoleDialog(context, message['role']);
+        }
+      },
+    );
+  }
+
+  void _showRoleDialog(BuildContext context, String role) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('새로운 역할 정보'),
+          content: Text('당신의 역할은 $role 입니다.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // 모달 닫기
+              },
+              child: Text('확인'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   void dispose() {
@@ -164,6 +317,36 @@ class _gameRoomPageState extends State<gameRoomPage> {
       ),
       body: Column(
         children: [
+          Column(
+            children: [
+              Text('현재 단계: $_phaseStep'),
+              Text('남은 시간: $_phaseTime / $_phaseTimeMax'),
+              Text('내 역할: $_MyRole'),
+            ],
+          ),
+          ButtonBar(
+            alignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  _gameLeave();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            GameLobby(username: widget.username)),
+                  );
+                },
+                child: Text('나가기'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  _gameReady();
+                },
+                child: Text('준비'),
+              ),
+            ],
+          ),
           _buildUserList(),
           Expanded(
             child: ListView.builder(
@@ -193,7 +376,10 @@ class _gameRoomPageState extends State<gameRoomPage> {
             margin: EdgeInsets.symmetric(horizontal: 4),
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.blue[100],
+              // color: Colors.blue[100],
+              color: _readyUsers.contains(_users[index])
+                  ? Colors.red
+                  : Colors.blue[100],
               borderRadius: BorderRadius.circular(20),
             ),
             child: Center(

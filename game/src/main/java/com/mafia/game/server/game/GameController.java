@@ -3,6 +3,8 @@ package com.mafia.game.server.game;
 import com.mafia.game.model.gamer.Gamer;
 import com.mafia.game.model.gamer.GamerService;
 import com.mafia.game.server.game.gameDto.*;
+import com.mafia.game.server.game.gameEvent.GamerActivityEvent;
+import com.mafia.game.server.game.gameEvent.GamerActionEvent;
 import com.mafia.game.server.game.gameStatus.GamePlayer;
 import com.mafia.game.server.game.gameStatus.GameState;
 import com.mafia.game.server.socket.SocketController;
@@ -30,10 +32,11 @@ public class GameController {
         updateGamerActivity(event.getUsername());
     }
 
-//    @GetMapping("/all")
-//    public Iterable<Game> getAllGames() {
-//        return gameService.getActiveGames();
-//    }
+    @EventListener
+    public void handlePlayerActionEvent(GamerActionEvent event) {
+        applyPlayerAction(event.getGameId(), event.getUsername(), event.getAction(), event.getTarget(), event.getProCon());
+    }
+
     @GetMapping("/all")
     public Map<Long, GameState> getAllGames() {
         List<Game> games = gameService.getActiveGames();
@@ -46,7 +49,6 @@ public class GameController {
         }
         return reponse_gameMap;
     }
-
 
     @PostMapping("/create")
     @Transactional
@@ -172,6 +174,7 @@ public class GameController {
         }
     }
 
+
     @Scheduled(fixedRate = 1000)
     @Transactional
     public void MainGameLoop() throws Exception {
@@ -243,14 +246,19 @@ public class GameController {
                 }
                 // 게임 상태 저장
                 gameMap.put(game.getId(), game);
-            }
-            else if (game.getGameStatus().equals("PLAYING")) {
-                game = gameService.updateGameState(game);
-                gameMap.put(game.getId(), game);
-                socketController.GameSocket(game.getId(), game);
                 for (Gamer player : game.getPlayers()) {
                     socketController.UserSocket(game.getId(), player.getUserName(), game);
                 }
+            }
+            else if (game.getGameStatus().equals("PLAYING")) {
+                if (game.getPlayers().size() < 4) {
+                    game.setGameStatus("SHUTDOWN");
+                    gameMap.put(game.getId(), game);
+                    continue;
+                }
+                game = gameService.updateGameState(game);
+                gameMap.put(game.getId(), game);
+                socketController.GameSocket(game.getId(), game);
             }
             else if (game.getGameStatus().equals("SHUTDOWN")) {
                 gameMap.remove(game.getId());
@@ -263,6 +271,12 @@ public class GameController {
         GamePlayer gamePlayer = gamerMap.get(gamerService.findByUserName(username).getId());
         gamePlayer.setDateTime(LocalDateTime.now().toString());
         gamerMap.put(gamerService.findByUserName(username).getId(), gamePlayer);
+    }
+
+    public void applyPlayerAction(Long gameId, String username, String action, String target, String proCon) {
+        GameState game = gameMap.get(gameId);
+        game.getActionMap().put(username, action + "/" + target + "/" + proCon);
+        gameMap.put(gameId, game);
     }
 }
 

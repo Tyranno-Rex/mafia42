@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -74,6 +75,7 @@ public class GameService {
     // 마피아 1명 경찰 1명 의사 1명 시민 1명으로 게임 시작
     public GameState SetGame4State(GameState gameState) {
         gameState.setPhaseTime(30);
+        gameState.setPhaseTimeMax(30);
         gameState.setPhaseStep("NIGHT");
 
         // 랜덤으로 마피아, 경찰, 의사, 시민을 배정
@@ -110,46 +112,61 @@ public class GameService {
     // Check2           : 게임 종료 조건 확인
     public GameState updateGameState(GameState gameState) {
         System.out.println("updateGameState: " + gameState.getPhaseStep() + " " + gameState.getPhaseTime());
+        if (gameState.getGamePlayers().isEmpty()) {
+            return gameState;
+        }
         if (gameState.getPhaseStep().equals("NIGHT")) {
             if (gameState.getPhaseTime() < 0){
                 gameState.setPhaseStep("CHECK1");
                 gameState.setPhaseTime(1);
+                gameState.setPhaseTimeMax(1);
             }
         }
         if (gameState.getPhaseStep().equals("CHECK1")) {
             if (gameState.getPhaseTime() < 0){
                 gameState.setPhaseStep("DAY");
+                Map<String, String> actionMap = gameState.getActionMap();
+                for (String username : actionMap.keySet()) {
+                    String action = actionMap.get(username);
+                    System.out.println("Action: " + username + " " + action);
+                }
                 gameState.setPhaseTime(60);
+                gameState.setPhaseTimeMax(60);
             }
         }
         if (gameState.getPhaseStep().equals("DAY")) {
             if (gameState.getPhaseTime() < 0){
                 gameState.setPhaseStep("VOTE1");
                 gameState.setPhaseTime(10);
+                gameState.setPhaseTimeMax(10);
             }
         }
         if (gameState.getPhaseStep().equals("VOTE1")) {
             if (gameState.getPhaseTime() < 0){
                 gameState.setPhaseStep("FINAL_REMARKS");
                 gameState.setPhaseTime(30);
+                gameState.setPhaseTimeMax(30);
             }
         }
         if (gameState.getPhaseStep().equals("FINAL_REMARKS")) {
             if (gameState.getPhaseTime() < 0){
                 gameState.setPhaseStep("VOTE2");
                 gameState.setPhaseTime(10);
+                gameState.setPhaseTimeMax(10);
             }
         }
         if (gameState.getPhaseStep().equals("VOTE2")) {
             if (gameState.getPhaseTime() < 0){
                 gameState.setPhaseStep("CHECK2");
                 gameState.setPhaseTime(1);
+                gameState.setPhaseTimeMax(1);
             }
         }
         if (gameState.getPhaseStep().equals("CHECK2")) {
             if (gameState.getPhaseTime() < 0){
                 gameState.setPhaseStep("NIGHT");
                 gameState.setPhaseTime(30);
+                gameState.setPhaseTimeMax(30);
             }
         }
         gameState.setPhaseTime(gameState.getPhaseTime() - 1);

@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:mafia_client/main.dart';
-import 'package:mafia_client/waiting.dart';
+import 'package:mafia_client/chatting.dart';
 import 'dart:html';
 
 class Game {
@@ -12,7 +12,11 @@ class Game {
   final int playerCount;
   final int maxplayerCount;
 
-  Game({required this.id, required this.name, required this.playerCount, required this.maxplayerCount});
+  Game(
+      {required this.id,
+      required this.name,
+      required this.playerCount,
+      required this.maxplayerCount});
 
   factory Game.fromJson(Map<String, dynamic> json) {
     return Game(
@@ -82,7 +86,6 @@ class _GameRoomsListState extends State<GameLobby> {
               .toList();
           _isLoading = false;
         });
-
       } else {
         throw Exception('Failed to load games');
       }

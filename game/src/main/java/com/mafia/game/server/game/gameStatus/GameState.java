@@ -8,7 +8,9 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -24,6 +26,7 @@ public class GameState {
 
 
     private int phaseTime;
+    private int phaseTimeMax;
     private String phaseStep;
     private List<GamePlayer> gamePlayers = new ArrayList<>();
 
@@ -32,6 +35,10 @@ public class GameState {
     private int policeCount;
     private int doctorCount;
     private int citizenCount;
+
+    // ActionMap is used to store the actions of the players
+    // <username, action>
+    private Map<String, String> ActionMap = new HashMap<>();
 
     // Eager fetch is used to load all the players at once
     private List<Gamer> players = new ArrayList<>();
@@ -62,6 +69,9 @@ public class GameState {
         dto.setGamePlayerCount(this.gamePlayerCount);
         dto.setGameMaxPlayerCount(this.gameMaxPlayerCount);
         dto.setDatetime(this.Datetime);
+        dto.setPhaseTime(this.phaseTime);
+        dto.setPhaseTimeMax(this.phaseTimeMax);
+        dto.setPhaseStep(this.phaseStep);
         dto.setPlayerCount(this.playerCount);
         dto.setMafiaCount(this.mafiaCount);
         dto.setPoliceCount(this.policeCount);

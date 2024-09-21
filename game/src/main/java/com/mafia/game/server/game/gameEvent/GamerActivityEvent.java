@@ -1,4 +1,4 @@
-package com.mafia.game.server.game;
+package com.mafia.game.server.game.gameEvent;
 
 import org.springframework.context.ApplicationEvent;
 
