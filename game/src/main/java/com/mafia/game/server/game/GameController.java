@@ -212,64 +212,65 @@ public class GameController {
 
         for (GameState game : gameMap.values()) {
             System.out.println("Game ID: " + game.getId() + " Game Status: " + game.getGameStatus() + " Player Count: " + game.getPlayers().size());
-            if (game.getGameStatus().equals("WAITING")) {
-                List<Gamer> players = game.getPlayers();
-                List<GamePlayer> gamePlayers = game.getGamePlayers();
-                if (players.isEmpty())
-                    gameMap.remove(game.getId());
-                else if (players.size() == game.getGameMaxPlayerCount()) {
-                    boolean isAllReady = true;
-                    for (GamePlayer gamePlayer : gamePlayers) {
-                        if (!gamePlayer.getIsReady()) {
-                            isAllReady = false;
-                            break;
+            for (GamePlayer gamePlayer : game.getGamePlayers()) {
+                System.out.println("Player: " + gamePlayer.getUsername() + " Role: " + gamePlayer.getRole() + " Alive: " + gamePlayer.getIsAlive() + " Ready: " + gamePlayer.getIsReady());
+            }
+            switch (game.getGameStatus()) {
+                case "WAITING" -> {
+                    List<Gamer> players = game.getPlayers();
+                    List<GamePlayer> gamePlayers = game.getGamePlayers();
+                    if (players.isEmpty())
+                        gameMap.remove(game.getId());
+                    else if (players.size() == game.getGameMaxPlayerCount()) {
+                        boolean isAllReady = true;
+                        for (GamePlayer gamePlayer : gamePlayers) {
+                            if (!gamePlayer.getIsReady()) {
+                                isAllReady = false;
+                                break;
+                            }
                         }
-                    }
-                    if (isAllReady) {
-                        game.setGameStatus("STARTING");
-                        gameMap.put(game.getId(), game);
-                    }
-                    socketController.GameSocket(game.getId(), game);
+                        if (isAllReady) {
+                            game.setGameStatus("STARTING");
+                            gameMap.put(game.getId(), game);
+                        }
+                        socketController.GameSocket(game.getId(), game);
+                    } else
+                        socketController.GameSocket(game.getId(), game);
                 }
-                else
-                    socketController.GameSocket(game.getId(), game);
-            }
-            else if (game.getGameStatus().equals("STARTING")) {
-                game.setGameStatus("PLAYING");
+                case "STARTING" -> {
+                    game.setGameStatus("PLAYING");
 
-                // 게임 시작 시 마피아, 경찰, 의사, 시민을 배정
-                if (game.getPlayers().size() == 4) {
-                    game = gameService.SetGame4State(game);
-                }
-                else
-                    continue;
+                    // 게임 시작 시 마피아, 경찰, 의사, 시민을 배정
+                    if (game.getPlayers().size() == 4) {
+                        game = gameService.SetGame4State(game);
+                    } else
+                        continue;
 
-                // 디버깅용
-                List<GamePlayer> gamePlayers = game.getGamePlayers();
-                for (int i = 0; i < 4; i++){
-                    System.out.println("Player: " + gamePlayers.get(i).getUsername());
-                    System.out.println("Role: " + gamePlayers.get(i).getRole());
-                }
-                // 게임 상태 저장
-                gameMap.put(game.getId(), game);
-                for (Gamer player : game.getPlayers()) {
-                    socketController.UserSocket(game.getId(), player.getUserName(), game, "ROLE");
-                }
-            }
-            else if (game.getGameStatus().equals("PLAYING")) {
-                if (game.getPlayers().size() < 4) {
-                    game.setGameStatus("SHUTDOWN");
+                    // 디버깅용
+                    List<GamePlayer> gamePlayers = game.getGamePlayers();
+                    for (int i = 0; i < 4; i++) {
+                        System.out.println("Player: " + gamePlayers.get(i).getUsername());
+                        System.out.println("Role: " + gamePlayers.get(i).getRole());
+                    }
+                    // 게임 상태 저장
                     gameMap.put(game.getId(), game);
-                    continue;
+                    for (Gamer player : game.getPlayers()) {
+                        socketController.UserSocket(game.getId(), player.getUserName(), game, "ROLE");
+                    }
                 }
-                game = gameService.updateGameState(game);
-                gameMap.put(game.getId(), game);
-                socketController.GameSocket(game.getId(), game);
-                game.setPlayerDoctorSaved("");
-                game.setPlayerMafiaKill("");
-            }
-            else if (game.getGameStatus().equals("SHUTDOWN")) {
-                gameMap.remove(game.getId());
+                case "PLAYING" -> {
+                    if (game.getPlayers().size() < 4) {
+                        game.setGameStatus("SHUTDOWN");
+                        gameMap.put(game.getId(), game);
+                        continue;
+                    }
+                    game = gameService.updateGameState(game);
+                    gameMap.put(game.getId(), game);
+                    socketController.GameSocket(game.getId(), game);
+                    game.setPlayerDoctorSaved("");
+                    game.setPlayerMafiaKill("");
+                }
+                case "SHUTDOWN" -> gameMap.remove(game.getId());
             }
         }
     }

@@ -56,6 +56,7 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
   final List<Map<String, dynamic>> _messages = [];
   List<String> _users = [];
   List<String> _readyUsers = [];
+  List<String> _aliveUsers = [];
 
   var _phaseStep = '';
   var _phaseTime = 0;
@@ -255,16 +256,18 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
   }
 
   void _processGameUpdate(Map<String, dynamic> game) {
-    // private String username;
-    // private String role;
-    // private String DateTime;
-    // private Boolean isAlive;
-    // private Boolean isReady;
     var userList = game['players'].map((player) => player['userName']).toList();
     var playerReady = game['players']
         .where((player) => player['isReady'] == true)
         .map((player) => player['userName'])
         .toList();
+    var playerAlive = game['players']
+        .where((player) => player['isAlive'] == true)
+        .map((player) => player['userName'])
+        .toList();
+
+    print('userList: $userList');
+    print('player Alive: $playerAlive');
 
     _phaseStep = game['phaseStep'] ?? '';
     _phaseTime = game['phaseTime'] ?? 0;
@@ -293,6 +296,7 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
     setState(() {
       _users = userList.cast<String>();
       _readyUsers = playerReady.cast<String>();
+      _aliveUsers = playerAlive.cast<String>();
       if (_showNotification) {
         _GameNotifyDialog(context, _notificationMessage);
         _showNotification = false;
@@ -414,10 +418,13 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
             margin: EdgeInsets.symmetric(horizontal: 4),
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              // color: Colors.blue[100],
-              color: _readyUsers.contains(_users[index])
-                  ? Colors.red
-                  : Colors.blue[100],
+              color: _phaseStep == ''
+                  ? (_readyUsers.contains(_users[index])
+                      ? Colors.green[100]
+                      : Colors.grey[300])
+                  : (_aliveUsers.contains(_users[index])
+                      ? Colors.green[100]
+                      : Colors.red[300]),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Center(

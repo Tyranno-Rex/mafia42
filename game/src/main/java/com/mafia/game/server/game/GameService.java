@@ -107,30 +107,6 @@ public class GameService {
                 1, gamePlayers.get(3).getUsername()
         );
         return gameState;
-
-        // 랜덤으로 마피아, 경찰, 의사, 시민을 배정
-//        List<Gamer> players = gameState.getPlayers();
-//        List<Gamer> copyPlayers = new ArrayList<>(players);
-//        List<GamePlayer> gamePlayers = gameState.getGamePlayers();
-//        for (int i = 0; i < 4; i++) {
-//            int random = (int) (Math.random() * copyPlayers.size());
-//            if (i < 1) {
-//                gamePlayers.add(new GamePlayer(copyPlayers.get(random).getUserName(), "MAFIA", true, true));
-//            } else if (i < 2) {
-//                gamePlayers.add(new GamePlayer(copyPlayers.get(random).getUserName(), "POLICE", true, true));
-//            } else if (i < 3) {
-//                gamePlayers.add(new GamePlayer(copyPlayers.get(random).getUserName(), "DOCTOR", true, true));
-//            } else {
-//                gamePlayers.add(new GamePlayer(copyPlayers.get(random).getUserName(), "CITIZEN", true, true));
-//            }
-//            copyPlayers.remove(random);
-//        }
-//
-//        Game game = gameRepository.findById(gameState.getId()).orElseThrow();
-//        game.setPlayerRoles(1, gamePlayers.get(0).getUsername(), 1, gamePlayers.get(1).getUsername(), 1, gamePlayers.get(2).getUsername(), 1, gamePlayers.get(3).getUsername());
-//
-//        gameState.setGamePlayers(gamePlayers);
-//        return gameState;
     }
 
     // Night            : 마피아는 죽일 사람을 선택, 의사는 살릴 사람을 선택, 경찰은 조사할 사람을 선택 (30초)
@@ -198,10 +174,10 @@ public class GameService {
                     }
                 }
 
+                gameState.setPlayerDoctorSaved(doctor_save);
                 for (GamePlayer gamePlayer : gamePlayers) {
                     if (gamePlayer.getUsername().equals(doctor_save) && doctor_save.equals(mafia_kill)) {
                         gamePlayer.setIsAlive(true);
-                        gameState.setPlayerDoctorSaved(doctor_save);
                         System.out.println("doctor_save: " + doctor_save);
                     }
                 }
@@ -218,6 +194,7 @@ public class GameService {
                         }
                     }
                 }
+                gameState.setGamePlayers(gamePlayers);
                 gameState.setActionMap(new HashMap<>());
             }
         }
