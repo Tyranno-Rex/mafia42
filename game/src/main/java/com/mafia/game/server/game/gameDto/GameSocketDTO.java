@@ -18,10 +18,14 @@ public class GameSocketDTO {
     private int gamePlayerCount;
     private int gameMaxPlayerCount;
     private String datetime;
+    private String message;
 
     private int phaseTime;
     private int phaseTimeMax;
     private String phaseStep;
+
+    private String playerDoctorSaved;
+    private String playerMafiaKill;
 
     private int playerCount;
     private int mafiaCount;

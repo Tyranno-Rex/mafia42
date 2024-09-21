@@ -54,8 +54,8 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
 
   final TextEditingController _messageController = TextEditingController();
   final List<Map<String, dynamic>> _messages = [];
-  final List<String> _users = [];
-  final List<String> _readyUsers = [];
+  List<String> _users = [];
+  List<String> _readyUsers = [];
 
   var _phaseStep = '';
   var _phaseTime = 0;
@@ -66,6 +66,8 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
   String _gameRoomStatus = 'WAITING';
   var _MyRole = '';
   var _isAlive = true;
+  bool _showNotification = false;
+  String _notificationMessage = '';
 
   @override
   void initState() {
@@ -226,44 +228,11 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
       callback: (StompFrame frame) {
         if (frame.body != null) {
           final game = json.decode(frame.body!);
-          var userList =
-              game['players'].map((player) => player['userName']).toList();
-          var playerReady =
-              game['players'].map((player) => player['userName']).toList();
-          for (var i = 0; i < game['players'].length; i++) {
-            if (game['players'][i]['isReady'] == null) {
-              playerReady.remove(game['players'][i]['userName']);
-            } else if (game['players'][i]['isReady'] == false) {
-              playerReady.remove(game['players'][i]['userName']);
-            }
-          }
-
-          if (game['phaseStep'] == null) {
-            game['phaseStep'] = '';
-          } else {
-            _phaseStep = game['phaseStep'];
-          }
-          if (game['phaseTime'] == null) {
-            game['phaseTime'] = 0;
-          } else {
-            _phaseTime = game['phaseTime'];
-          }
-          if (game['phaseTimeMax'] == null) {
-            game['phaseTimeMax'] = 0;
-          } else {
-            _phaseTimeMax = game['phaseTimeMax'];
-          }
-          setState(() {
-            _users.clear();
-            _users.addAll(userList.cast<String>());
-            _readyUsers.clear();
-            _readyUsers.addAll(playerReady.cast<String>());
-          });
+          _processGameUpdate(game);
         }
       },
     );
 
-    // 소켓 연결 설정 부분
     _stompClient.subscribe(
       destination:
           '$_userSubscribeEndpoint/${widget.gameId}/${widget.username}',
@@ -275,11 +244,60 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
             _isAlive = message['alive'];
           });
 
-          // 새로운 역할 정보가 도착했을 때 모달 알림 표시
-          _showRoleDialog(context, message['role']);
+          if (message['message'] != null && message['message'] != "ROLE") {
+            _GameNotifyDialog(context, message['message']);
+          } else {
+            _showRoleDialog(context, message['role']);
+          }
         }
       },
     );
+  }
+
+  void _processGameUpdate(Map<String, dynamic> game) {
+    // private String username;
+    // private String role;
+    // private String DateTime;
+    // private Boolean isAlive;
+    // private Boolean isReady;
+    var userList = game['players'].map((player) => player['userName']).toList();
+    var playerReady = game['players']
+        .where((player) => player['isReady'] == true)
+        .map((player) => player['userName'])
+        .toList();
+
+    _phaseStep = game['phaseStep'] ?? '';
+    _phaseTime = game['phaseTime'] ?? 0;
+    _phaseTimeMax = game['phaseTimeMax'] ?? 0;
+
+    if (game['playerDoctorSaved'] != null &&
+        game['playerDoctorSaved'].isNotEmpty &&
+        game['playerMafiaKill'] != null &&
+        game['playerMafiaKill'].isNotEmpty) {
+      if (game['playerDoctorSaved'] == game['playerMafiaKill']) {
+        _showNotification = true;
+        _notificationMessage = '의사가 ${game['playerMafiaKill']}를 구했습니다.';
+      } else {
+        _showNotification = true;
+        _notificationMessage = '한밤 중 ${game['playerMafiaKill']}가 살해되었습니다.';
+      }
+      game['playerDoctorSaved'] = '';
+      game['playerMafiaKill'] = '';
+    }
+
+    if (game['message'] != null && game['message'] != "") {
+      _showNotification = true;
+      _notificationMessage = game['message'];
+    }
+
+    setState(() {
+      _users = userList.cast<String>();
+      _readyUsers = playerReady.cast<String>();
+      if (_showNotification) {
+        _GameNotifyDialog(context, _notificationMessage);
+        _showNotification = false;
+      }
+    });
   }
 
   void _showRoleDialog(BuildContext context, String role) {
@@ -287,14 +305,34 @@ class _WaitingRoomPageState extends State<WaitingRoomPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('새로운 역할 정보'),
+          title: const Text('새로운 역할 정보'),
           content: Text('당신의 역할은 $role 입니다.'),
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // 모달 닫기
+                Navigator.of(context).pop();
               },
-              child: Text('확인'),
+              child: const Text('확인'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _GameNotifyDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('게임 알림'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('확인'),
             ),
           ],
         );

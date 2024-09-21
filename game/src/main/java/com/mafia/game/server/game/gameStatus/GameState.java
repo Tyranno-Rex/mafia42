@@ -23,12 +23,16 @@ public class GameState {
     private int gamePlayerCount;
     private int gameMaxPlayerCount;
     private String Datetime;
-
+    private String message;
 
     private int phaseTime;
     private int phaseTimeMax;
     private String phaseStep;
     private List<GamePlayer> gamePlayers = new ArrayList<>();
+
+    private String playerDoctorSaved;
+    private String playerMafiaKill;
+    private String playerSelectedByVote;
 
     private int playerCount;
     private int mafiaCount;
@@ -69,20 +73,23 @@ public class GameState {
         dto.setGamePlayerCount(this.gamePlayerCount);
         dto.setGameMaxPlayerCount(this.gameMaxPlayerCount);
         dto.setDatetime(this.Datetime);
+        dto.setMessage(this.message);
         dto.setPhaseTime(this.phaseTime);
         dto.setPhaseTimeMax(this.phaseTimeMax);
         dto.setPhaseStep(this.phaseStep);
+        dto.setPlayerDoctorSaved(this.playerDoctorSaved);
+        dto.setPlayerMafiaKill(this.playerMafiaKill);
         dto.setPlayerCount(this.playerCount);
         dto.setMafiaCount(this.mafiaCount);
         dto.setPoliceCount(this.policeCount);
         dto.setDoctorCount(this.doctorCount);
         dto.setCitizenCount(this.citizenCount);
 
-        for (Gamer gamer : this.players) {
+        for (GamePlayer gamer : this.gamePlayers) {
             GamerSocketDTO gamerDTO = new GamerSocketDTO();
-            gamerDTO.setId(gamer.getId());
-            gamerDTO.setUserName(gamer.getUserName());
+            gamerDTO.setUserName(gamer.getUsername());
             gamerDTO.setIsReady(gamer.getIsReady());
+            gamerDTO.setIsAlive(gamer.getIsAlive());
             dto.getPlayers().add(gamerDTO);
         }
         return dto;

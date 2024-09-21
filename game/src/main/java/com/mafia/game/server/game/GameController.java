@@ -34,7 +34,7 @@ public class GameController {
 
     @EventListener
     public void handlePlayerActionEvent(GamerActionEvent event) {
-        applyPlayerAction(event.getGameId(), event.getUsername(), event.getAction(), event.getTarget(), event.getProCon());
+        applyPlayerAction(event.getGameId(), event.getUsername(), event.getAction(), event.getTarget());
     }
 
     @GetMapping("/all")
@@ -137,11 +137,16 @@ public class GameController {
                 gameMap.put(game.getId(), game);
             }
 
-
             GamePlayer newGamePlayer = new GamePlayer(newPlayer.getUserName(), "CITIZEN", true, false);
             newGamePlayer.setDateTime(LocalDateTime.now().toString());
             // gamerMap에 게이머의 접속 시간을 기록
             gamerMap.put(newPlayer.getId(), newGamePlayer);
+
+            List<GamePlayer> gamePlayers = new ArrayList<>(game.getGamePlayers());
+            gamePlayers.add(newGamePlayer);
+            game.setGamePlayers(gamePlayers);
+            gameMap.put(game.getId(), game);
+
             System.out.println("Gamer is added to the game: " + newPlayer.getUserName());
             response.put("status", "success");
             return response;
@@ -158,13 +163,13 @@ public class GameController {
         try {
             System.out.println("Game Ready      : " + gameReadyDTO.getUsername());
             GameState game = gameMap.get(gameReadyDTO.getGameId());
-            List<Gamer> players = game.getPlayers();
-            for (Gamer player : players) {
-                if (player.getUserName().equals(gameReadyDTO.getUsername())) {
-                    player.setIsReady(gameReadyDTO.getReadyStatus());
+            List<GamePlayer> gamePlayers = game.getGamePlayers();
+            for (GamePlayer gamePlayer : gamePlayers) {
+                if (gamePlayer.getUsername().equals(gameReadyDTO.getUsername())) {
+                    gamePlayer.setIsReady(gameReadyDTO.getReadyStatus());
                 }
             }
-            game.setPlayers(players);
+            game.setGamePlayers(gamePlayers);
             gameMap.put(game.getId(), game);
             response.put("status", "success");
             return response;
@@ -209,12 +214,13 @@ public class GameController {
             System.out.println("Game ID: " + game.getId() + " Game Status: " + game.getGameStatus() + " Player Count: " + game.getPlayers().size());
             if (game.getGameStatus().equals("WAITING")) {
                 List<Gamer> players = game.getPlayers();
+                List<GamePlayer> gamePlayers = game.getGamePlayers();
                 if (players.isEmpty())
                     gameMap.remove(game.getId());
                 else if (players.size() == game.getGameMaxPlayerCount()) {
                     boolean isAllReady = true;
-                    for (Gamer player : players) {
-                        if (player.getIsReady() == null || !player.getIsReady()) {
+                    for (GamePlayer gamePlayer : gamePlayers) {
+                        if (!gamePlayer.getIsReady()) {
                             isAllReady = false;
                             break;
                         }
@@ -247,7 +253,7 @@ public class GameController {
                 // 게임 상태 저장
                 gameMap.put(game.getId(), game);
                 for (Gamer player : game.getPlayers()) {
-                    socketController.UserSocket(game.getId(), player.getUserName(), game);
+                    socketController.UserSocket(game.getId(), player.getUserName(), game, "ROLE");
                 }
             }
             else if (game.getGameStatus().equals("PLAYING")) {
@@ -259,6 +265,8 @@ public class GameController {
                 game = gameService.updateGameState(game);
                 gameMap.put(game.getId(), game);
                 socketController.GameSocket(game.getId(), game);
+                game.setPlayerDoctorSaved("");
+                game.setPlayerMafiaKill("");
             }
             else if (game.getGameStatus().equals("SHUTDOWN")) {
                 gameMap.remove(game.getId());
@@ -273,10 +281,39 @@ public class GameController {
         gamerMap.put(gamerService.findByUserName(username).getId(), gamePlayer);
     }
 
-    public void applyPlayerAction(Long gameId, String username, String action, String target, String proCon) {
+    public void applyPlayerAction(Long gameId, String username, String action, String target) {
         GameState game = gameMap.get(gameId);
-        game.getActionMap().put(username, action + "/" + target + "/" + proCon);
-        gameMap.put(gameId, game);
+
+        if (action.equals("mafia") || action.equals("police") || action.equals("doctor")){
+            if (game.getPhaseStep().equals("NIGHT")) {
+                switch (action) {
+                    case "mafia":
+                        if (game.getGamePlayers().stream().anyMatch(p -> p.getUsername().equals(username) && p.getRole().equals("MAFIA")))
+                            game.getActionMap().put(username, action + "/" + target);
+                        break;
+                    case "police":
+                        if (game.getGamePlayers().stream().anyMatch(p -> p.getUsername().equals(username) && p.getRole().equals("POLICE")))
+                            game.getActionMap().put(username, action + "/" + target);
+                        break;
+                    case "doctor":
+                        if (game.getGamePlayers().stream().anyMatch(p -> p.getUsername().equals(username) && p.getRole().equals("DOCTOR")))
+                            game.getActionMap().put(username, action + "/" + target);
+                        break;
+                }
+            }
+        }
+
+        if (action.equals("vote1")) {
+            if (game.getPhaseStep().equals("VOTE1")) {
+                game.getActionMap().put(username, action + "/" + target);
+            }
+        }
+
+        if (action.equals("vote2")) {
+            if (game.getPhaseStep().equals("VOTE2")) {
+                game.getActionMap().put(username, action + "/" + target);
+            }
+        }
     }
 }
 

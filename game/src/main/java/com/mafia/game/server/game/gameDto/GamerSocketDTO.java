@@ -6,7 +6,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class GamerSocketDTO {
-    private Long id;
     private String userName;
     private Boolean isReady;
+    private Boolean isAlive;
 }

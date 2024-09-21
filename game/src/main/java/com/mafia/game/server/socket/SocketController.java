@@ -31,28 +31,27 @@ public class SocketController {
         if (message.getContent().startsWith("/mafia")) {
             String action = "mafia";
             String target = message.getContent().split(" ")[1];
-            eventPublisher.publishEvent(new GamerActionEvent(Long.parseLong(message.getGameId()), message.getUuid(), action, target, null));
+            eventPublisher.publishEvent(new GamerActionEvent(Long.parseLong(message.getGameId()), message.getUuid(), action, target));
         }
         else if (message.getContent().startsWith("/police")) {
             String action = "police";
             String target = message.getContent().split(" ")[1];
-            eventPublisher.publishEvent(new GamerActionEvent(Long.parseLong(message.getGameId()), message.getUuid(), action, target, null));
+            eventPublisher.publishEvent(new GamerActionEvent(Long.parseLong(message.getGameId()), message.getUuid(), action, target));
         }
         else if (message.getContent().startsWith("/doctor")) {
             String action = "doctor";
             String target = message.getContent().split(" ")[1];
-            eventPublisher.publishEvent(new GamerActionEvent(Long.parseLong(message.getGameId()), message.getUuid(), action, target, null));
+            eventPublisher.publishEvent(new GamerActionEvent(Long.parseLong(message.getGameId()), message.getUuid(), action, target));
         }
         else if (message.getContent().startsWith("/vote1")) {
             String action = "vote1";
             String target = message.getContent().split(" ")[1];
-            eventPublisher.publishEvent(new GamerActionEvent(Long.parseLong(message.getGameId()), message.getUuid(), action, target, null));
+            eventPublisher.publishEvent(new GamerActionEvent(Long.parseLong(message.getGameId()), message.getUuid(), action, target));
         }
         else if (message.getContent().startsWith("/vote2")){
             String action = "vote2";
             String target = message.getContent().split(" ")[1];
-            String ProCon = message.getContent().split(" ")[2];
-            eventPublisher.publishEvent(new GamerActionEvent(Long.parseLong(message.getGameId()), message.getUuid(), action, target, ProCon));
+            eventPublisher.publishEvent(new GamerActionEvent(Long.parseLong(message.getGameId()), message.getUuid(), action, target));
         } else{
             messagingTemplate.convertAndSend("/topic/message/" + message.getGameId(), message);
         }
@@ -67,10 +66,11 @@ public class SocketController {
     public void GameSocket(Long roomId, GameState game) throws Exception {
         GameSocketDTO gameSocketDTO = game.toDTO();
         messagingTemplate.convertAndSend("/topic/game/" + roomId, gameSocketDTO);
+
     }
 
     @MessageMapping("/user")
-    public void UserSocket(Long roomId, String userName, GameState game) throws Exception {
+    public void UserSocket(Long roomId, String userName, GameState game, String msg) throws Exception {
 
         String role = game.getGamePlayers().stream()
                 .filter(player -> player.getUsername().equals(userName))
@@ -79,37 +79,10 @@ public class SocketController {
                 .orElse(null);
         boolean alive = game.getGamePlayers().stream()
                 .filter(player -> player.getUsername().equals(userName))
-                .map(GamePlayer::isAlive)
+                .map(GamePlayer::getIsAlive)
                 .findFirst()
                 .orElse(false);
-        GameUser gameUser = new GameUser(userName, role, alive);
+        GameUser gameUser = new GameUser(userName, role, msg, alive);
         messagingTemplate.convertAndSend("/topic/user/" + roomId + "/" + userName, gameUser);
     }
 }
-
-//@Controller
-//@RequiredArgsConstructor
-//public class SocketController {
-//
-//    @Autowired
-//    private RedisTemplate<String, Object> redisTemplate;
-//
-//    private final ApplicationEventPublisher eventPublisher;
-//
-//    @MessageMapping("/message")
-//    public void messageSocket(Message message) {
-//        redisTemplate.convertAndSend("topic/message/" + message.getGameId(), message);
-//    }
-//
-//    @MessageMapping("/check")
-//    public void checkSocket(CheckMessage checkMessage) {
-//        eventPublisher.publishEvent(new GamerActivityEvent(checkMessage.getUsername()));
-//    }
-//
-//    @MessageMapping("/game")
-//    public void GameSocket(Long roomId, GameState game) {
-//        GameSocketDTO gameSocketDTO = game.toDTO();
-//        redisTemplate.convertAndSend("topic/game/" + roomId, gameSocketDTO);
-//    }
-//}
-//

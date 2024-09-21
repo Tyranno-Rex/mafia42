@@ -9,8 +9,8 @@ public class GamePlayer {
     private String username;
     private String role;
     private String DateTime;
-    private boolean isAlive;
-    private boolean isReady;
+    private Boolean isAlive;
+    private Boolean isReady;
 
     public GamePlayer() {
     }
