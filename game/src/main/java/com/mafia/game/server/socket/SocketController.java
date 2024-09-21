@@ -37,6 +37,12 @@ public class SocketController {
         GameSocketDTO gameSocketDTO = game.toDTO();
         messagingTemplate.convertAndSend("/topic/game/" + roomId, gameSocketDTO);
     }
+
+    @MessageMapping("/user")
+    public void UserSocket(Long roomId, String userName, GameState game) throws Exception {
+        GameSocketDTO gameSocketDTO = game.toDTO();
+        messagingTemplate.convertAndSend("/topic/user/" + roomId + "/" + userName, gameSocketDTO);
+    }
 }
 
 //@Controller

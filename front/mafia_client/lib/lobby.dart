@@ -10,14 +10,16 @@ class Game {
   final int id;
   final String name;
   final int playerCount;
+  final int maxplayerCount;
 
-  Game({required this.id, required this.name, required this.playerCount});
+  Game({required this.id, required this.name, required this.playerCount, required this.maxplayerCount});
 
   factory Game.fromJson(Map<String, dynamic> json) {
     return Game(
       id: json['id'] as int,
       name: json['gameName'].toString(),
       playerCount: json['gamePlayerCount'] as int,
+      maxplayerCount: json['gameMaxPlayerCount'] as int,
     );
   }
 }
@@ -36,6 +38,7 @@ class _GameRoomsListState extends State<GameLobby> {
   bool _isLoading = true;
   final _nameController = TextEditingController();
   final _gamePasswordController = TextEditingController();
+  final _gameMaxPlayerCountController = TextEditingController();
 
   @override
   void initState() {
@@ -103,7 +106,7 @@ class _GameRoomsListState extends State<GameLobby> {
           'gameStatus': 'CREATED',
           'gameOwner': widget.username,
           'gamePlayerCount': 0,
-          'gameMaxPlayerCount': 8,
+          'gameMaxPlayerCount': int.parse(_gameMaxPlayerCountController.text),
         },
         options: Options(
           contentType: 'application/json',
@@ -115,6 +118,7 @@ class _GameRoomsListState extends State<GameLobby> {
       print('Response data: ${response.data}');
       _nameController.clear();
       _gamePasswordController.clear();
+      _gameMaxPlayerCountController.clear();
       if (response.statusCode == 200) {
         response.data['status'] == 'success'
             ? _fetchGames()
@@ -150,6 +154,13 @@ class _GameRoomsListState extends State<GameLobby> {
                   hintText: '비밀번호를 입력하세요',
                 ),
               ),
+              TextField(
+                controller: _gameMaxPlayerCountController,
+                decoration: const InputDecoration(
+                  labelText: '최대 플레이어 수',
+                  hintText: '최대 플레이어 수를 입력하세요',
+                ),
+              )
             ],
           ),
           actions: [
@@ -211,7 +222,7 @@ class _GameRoomsListState extends State<GameLobby> {
                         ),
                       ),
                       subtitle: Text(
-                        '플레이어 수: ${game.playerCount}',
+                        '플레이어 수/최대 수용인원: ${game.playerCount}/${game.maxplayerCount}',
                         style: const TextStyle(fontSize: 14),
                       ),
                       trailing: const Icon(Icons.arrow_forward_ios),

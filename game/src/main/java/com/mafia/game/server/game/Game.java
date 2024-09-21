@@ -27,9 +27,13 @@ public class Game {
 
     private int playerCount;
     private int mafiaCount;
+    private String mafiaUser;
     private int policeCount;
+    private String policeUser;
     private int doctorCount;
+    private String doctorUser;
     private int citizenCount;
+    private String citizenUser;
 
     @ManyToMany
     private List<Gamer> players = new ArrayList<>();
@@ -53,9 +57,11 @@ public class Game {
         if (this.playerCount == 0) {
             this.roomStatus = "WAITING";
             this.playerCount++;
+            this.roomPlayerCount++;
             this.players.add(gamer);
         } else{
             this.playerCount++;
+            this.roomPlayerCount++;
             this.players.add(gamer);
         }
         System.out.println("Player added to the game: " + gamer.getUserName() + " size: " + players.size());
@@ -66,6 +72,25 @@ public class Game {
     }
 
     public void removePlayer(String userName) {
-        players.removeIf(gamer -> gamer.getUserName().equals(userName));
+        for (Gamer gamer : players) {
+            if (gamer.getUserName().equals(userName)) {
+                this.playerCount--;
+                this.roomPlayerCount--;
+                players.remove(gamer);
+                System.out.println("Player removed from the game: " + gamer.getUserName());
+                return;
+            }
+        }
+    }
+
+    public void setPlayerRoles(int mafiaCount, String mafiaUser, int policeCount, String policeUser, int doctorCount, String doctorUser, int citizenCount, String citizenUser) {
+        this.mafiaCount = mafiaCount;
+        this.mafiaUser = mafiaUser;
+        this.policeCount = policeCount;
+        this.policeUser = policeUser;
+        this.doctorCount = doctorCount;
+        this.doctorUser = doctorUser;
+        this.citizenCount = citizenCount;
+        this.citizenUser = citizenUser;
     }
 }

@@ -2,9 +2,7 @@ package com.mafia.game.server.game;
 
 import com.mafia.game.model.gamer.Gamer;
 import com.mafia.game.model.gamer.GamerService;
-import com.mafia.game.server.game.gameDto.GameDeleteDTO;
-import com.mafia.game.server.game.gameDto.GameJoinDTO;
-import com.mafia.game.server.game.gameDto.GameReadyDTO;
+import com.mafia.game.server.game.gameDto.*;
 import com.mafia.game.server.game.gameStatus.GamePlayer;
 import com.mafia.game.server.game.gameStatus.GameState;
 import com.mafia.game.server.socket.SocketController;
@@ -13,8 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
-
-import com.mafia.game.server.game.gameDto.GameStatusDTO;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -59,15 +55,12 @@ public class GameController {
         try {
             // 실제 DB에 게임 정보를 저장
             Game game = gameService.createGame(gameStatusDTO);
-
-
             // gameMap에 게임 정보를 저장
             Long gameId = game.getId();
             gameMap.put(gameId, new GameState(gameId,
                     game.getRoomName(), game.getRoomPassword(),
                     game.getRoomStatus(), game.getRoomOwner(),
                     game.getRoomPlayerCount(), game.getRoomMaxPlayerCount()));
-
             response.put("status", "success");
             return response;
         } catch (Exception e) {
@@ -82,6 +75,27 @@ public class GameController {
         Map<String, String> response = new HashMap<>();
         try {
             gameService.deleteGame(gameDeleteDTO);
+            response.put("status", "success");
+            return response;
+        } catch (Exception e) {
+            response.put("status", "fail");
+            return response;
+        }
+    }
+
+    @PostMapping("/leave")
+    @Transactional
+    public Map<String, String> leaveGame(@RequestBody GameLeaveDTO gameLeaveDTO) {
+        Map<String, String> response = new HashMap<>();
+        try {
+            // 실제 DB에서 게임 정보를 업데이트
+            gameService.deleteUser(gameLeaveDTO.getGameId(), gameLeaveDTO.getUserName());
+            // gameMap에서 게임 정보를 업데이트
+            GameState game = gameMap.get(gameLeaveDTO.getGameId());
+            List<Gamer> players = new ArrayList<>(game.getPlayers());
+            players.removeIf(p -> p.getUserName().equals(gameLeaveDTO.getUserName()));
+            game.setPlayers(players);
+            gameMap.put(game.getId(), game);
             response.put("status", "success");
             return response;
         } catch (Exception e) {
@@ -183,6 +197,7 @@ public class GameController {
                     List<Gamer> updatedPlayers = new ArrayList<>(game.getPlayers());
                     updatedPlayers.removeIf(gamer -> gamer.getId().equals(entry.getKey()));
                     game.setPlayers(updatedPlayers);
+                    leaveGame(new GameLeaveDTO(game.getId(), entry.getValue().getUsername()));
                 }
             }
         }
@@ -194,32 +209,48 @@ public class GameController {
                 if (players.isEmpty())
                     gameMap.remove(game.getId());
                 else if (players.size() == game.getGameMaxPlayerCount()) {
-                    Boolean isAllReady = true;
+                    boolean isAllReady = true;
                     for (Gamer player : players) {
-                        if (!player.getIsReady()) {
+                        if (player.getIsReady() == null || !player.getIsReady()) {
                             isAllReady = false;
                             break;
                         }
                     }
-
+                    if (isAllReady) {
+                        game.setGameStatus("STARTING");
+                        gameMap.put(game.getId(), game);
+                    }
+                    socketController.GameSocket(game.getId(), game);
                 }
                 else
                     socketController.GameSocket(game.getId(), game);
             }
             else if (game.getGameStatus().equals("STARTING")) {
                 game.setGameStatus("PLAYING");
-                game = gameService.SetGameState(game);
 
+                // 게임 시작 시 마피아, 경찰, 의사, 시민을 배정
+                if (game.getPlayers().size() == 4) {
+                    game = gameService.SetGame4State(game);
+                }
+                else
+                    continue;
+
+                // 디버깅용
                 List<GamePlayer> gamePlayers = game.getGamePlayers();
-                for (int i = 0; i < 8; i++){
+                for (int i = 0; i < 4; i++){
+                    System.out.println("Player: " + gamePlayers.get(i).getUsername());
                     System.out.println("Role: " + gamePlayers.get(i).getRole());
                 }
+                // 게임 상태 저장
                 gameMap.put(game.getId(), game);
             }
             else if (game.getGameStatus().equals("PLAYING")) {
                 game = gameService.updateGameState(game);
                 gameMap.put(game.getId(), game);
                 socketController.GameSocket(game.getId(), game);
+                for (Gamer player : game.getPlayers()) {
+                    socketController.UserSocket(game.getId(), player.getUserName(), game);
+                }
             }
             else if (game.getGameStatus().equals("SHUTDOWN")) {
                 gameMap.remove(game.getId());
