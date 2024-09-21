@@ -194,6 +194,44 @@ public class GameService {
                         }
                     }
                 }
+
+                int alivePlayerCount = 0;
+                int mafiaCount = 0;
+
+                for (GamePlayer gamePlayer : gamePlayers) {
+                    if (gamePlayer.getIsAlive()) {
+                        alivePlayerCount++;
+                        if (gamePlayer.getRole().equals("MAFIA")) {
+                            mafiaCount++;
+                        }
+                    }
+                }
+
+                if (mafiaCount == 0) {
+                    gameState.setMessage("시민 승리");
+                    socketController.GameSocket(gameState.getId(), gameState);
+                    gameState.setMessage("");
+                    gameState.setPhaseStep("");
+                    List<GamePlayer> resetGamePlayers = gameState.getGamePlayers();
+                    for (GamePlayer gamePlayer : resetGamePlayers) {
+                        gamePlayer.setIsAlive(false);
+                        gamePlayer.setIsReady(false);
+                    }
+                    gameState.setGameStatus("WAITING");
+                } else if (mafiaCount == alivePlayerCount) {
+                    gameState.setMessage("마피아 승리");
+                    socketController.GameSocket(gameState.getId(), gameState);
+                    gameState.setMessage("");
+                    gameState.setPhaseStep("");
+                    List<GamePlayer> resetGamePlayers = gameState.getGamePlayers();
+                    for (GamePlayer gamePlayer : resetGamePlayers) {
+                        gamePlayer.setIsAlive(false);
+                        gamePlayer.setIsReady(false);
+                    }
+                    gameState.setGameStatus("WAITING");
+                }
+
+
                 gameState.setGamePlayers(gamePlayers);
                 gameState.setActionMap(new HashMap<>());
             }
@@ -312,6 +350,45 @@ public class GameService {
                 gameState.setPhaseStep("NIGHT");
                 gameState.setPhaseTime(30);
                 gameState.setPhaseTimeMax(30);
+
+
+                List<GamePlayer> gamePlayers = gameState.getGamePlayers();
+                int alivePlayerCount = 0;
+                int mafiaCount = 0;
+
+                for (GamePlayer gamePlayer : gamePlayers) {
+                    if (gamePlayer.getIsAlive()) {
+                        alivePlayerCount++;
+                        if (gamePlayer.getRole().equals("MAFIA")) {
+                            mafiaCount++;
+                        }
+                    }
+                }
+
+                if (mafiaCount == 0) {
+                    gameState.setMessage("시민 승리");
+                    socketController.GameSocket(gameState.getId(), gameState);
+                    gameState.setMessage("");
+                    gameState.setPhaseStep("");
+                    List<GamePlayer> resetGamePlayers = gameState.getGamePlayers();
+                    for (GamePlayer gamePlayer : resetGamePlayers) {
+                        gamePlayer.setIsAlive(false);
+                        gamePlayer.setIsReady(false);
+                    }
+                    gameState.setGameStatus("WAITING");
+                } else if (mafiaCount >= alivePlayerCount - mafiaCount) {
+                    gameState.setMessage("마피아 승리");
+                    socketController.GameSocket(gameState.getId(), gameState);
+                    gameState.setMessage("");
+                    gameState.setPhaseStep("");
+                    List<GamePlayer> resetGamePlayers = gameState.getGamePlayers();
+                    for (GamePlayer gamePlayer : resetGamePlayers) {
+                        gamePlayer.setIsAlive(false);
+                        gamePlayer.setIsReady(false);
+                    }
+                    gameState.setGameStatus("WAITING");
+                }
+
             }
         }
         gameState.setPhaseTime(gameState.getPhaseTime() - 1);
