@@ -39,14 +39,20 @@ public class GameController {
 
     @GetMapping("/all")
     public Map<Long, GameState> getAllGames() {
-        List<Game> games = gameService.getActiveGames();
+//        List<Game> games = gameService.getActiveGames();
+//        Map<Long, GameState> reponse_gameMap = new HashMap<>();
+//        for (Game game : games) {
+//            reponse_gameMap.put(game.getId(), new GameState(game.getId(),
+//                    game.getRoomName(), game.getRoomPassword(),
+//                    game.getRoomStatus(), game.getRoomOwner(),
+//                    game.getRoomPlayerCount(), game.getRoomMaxPlayerCount()));
+//        }
+
         Map<Long, GameState> reponse_gameMap = new HashMap<>();
-        for (Game game : games) {
-            reponse_gameMap.put(game.getId(), new GameState(game.getId(),
-                    game.getRoomName(), game.getRoomPassword(),
-                    game.getRoomStatus(), game.getRoomOwner(),
-                    game.getRoomPlayerCount(), game.getRoomMaxPlayerCount()));
+        for (GameState game : gameMap.values()) {
+            reponse_gameMap.put(game.getId(), game);
         }
+
         return reponse_gameMap;
     }
 

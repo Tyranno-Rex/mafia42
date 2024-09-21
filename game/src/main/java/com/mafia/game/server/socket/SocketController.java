@@ -27,7 +27,6 @@ public class SocketController {
 
     @MessageMapping("/message")
     public void messageSocket(Message message) throws Exception {
-
         if (message.getContent().startsWith("/mafia")) {
             String action = "mafia";
             String target = message.getContent().split(" ")[1];
@@ -71,7 +70,6 @@ public class SocketController {
 
     @MessageMapping("/user")
     public void UserSocket(Long roomId, String userName, GameState game, String msg) throws Exception {
-
         String role = game.getGamePlayers().stream()
                 .filter(player -> player.getUsername().equals(userName))
                 .map(GamePlayer::getRole)
