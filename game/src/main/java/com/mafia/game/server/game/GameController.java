@@ -151,6 +151,7 @@ public class GameController {
             List<GamePlayer> gamePlayers = new ArrayList<>(game.getGamePlayers());
             gamePlayers.add(newGamePlayer);
             game.setGamePlayers(gamePlayers);
+            game.setPlayerCount(game.getPlayers().size());
             gameMap.put(game.getId(), game);
 
             System.out.println("Gamer is added to the game: " + newPlayer.getUserName());
@@ -217,7 +218,7 @@ public class GameController {
         }
 
         for (GameState game : gameMap.values()) {
-            System.out.println("Game ID: " + game.getId() + " Game Status: " + game.getGameStatus() + " Player Count: " + game.getPlayers().size());
+            System.out.println("Game ID: " + game.getId() + " Game Status: " + game.getGameStatus() + " Player Count: " + game.getPlayerCount());
             for (GamePlayer gamePlayer : game.getGamePlayers()) {
                 System.out.println("Player: " + gamePlayer.getUsername() + " Role: " + gamePlayer.getRole() + " Alive: " + gamePlayer.getIsAlive() + " Ready: " + gamePlayer.getIsReady());
             }
