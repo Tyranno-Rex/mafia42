@@ -59,12 +59,13 @@ class _GameRoomsListState extends State<GameLobby> {
   }
 
   Future<void> _fetchGames() async {
-    var accessToken = window.localStorage['access'];
     setState(() {
       _isLoading = true;
     });
 
     try {
+      var accessToken = window.localStorage['access'];
+      print('accessToken: $accessToken');
       final response = await Dio().get(
         'http://localhost:8080/game/all',
         options: Options(
@@ -98,9 +99,9 @@ class _GameRoomsListState extends State<GameLobby> {
   }
 
   Future<void> _createGame() async {
-    var accessToken = window.localStorage['access'];
-    print('accessToken: $accessToken');
     try {
+      var accessToken = window.localStorage['access'];
+      print('accessToken: $accessToken');
       final response = await Dio().post(
         'http://localhost:8080/game/create',
         data: {
